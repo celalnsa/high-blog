@@ -9,7 +9,7 @@ description: 同济大学10级. 假全栈, 涉及数据处理, 后端(Python), �
 author: High He
 email: celalnsa@qq.com
 keywords: "前端,js,react-native,Android,Python,音乐,电影"
-language:
+language: zh-Hans
 timezone:
 
 # URL
@@ -76,7 +76,7 @@ pagination_dir: page
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: yilia
+theme: next
 
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
