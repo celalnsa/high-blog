@@ -8,3 +8,4 @@
 
 # hexo
 public/
+.deploy_git/
