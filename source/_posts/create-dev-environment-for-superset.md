@@ -4,6 +4,8 @@ date: 2017-03-27 21:55:40
 tags: 
     - superset
     - python
+categories:
+    - 写代码
 ---
 
 
