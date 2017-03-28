@@ -28,13 +28,13 @@ pip install -r requirements.txt
 ```
 
 
-cd到代码目录 举例: ${Code}
+cd到代码目录 举例: ${superset_source}
 ```bash
-cd ${Code}
+cd ${superset_source}
 cd superset/static/assets
 npm install
 npm run prod
-cd ${Code}
+cd ${superset_source}
 export PYTHONPATH=.:${PYTHONPATH}
 ```
 
@@ -42,7 +42,7 @@ export PYTHONPATH=.:${PYTHONPATH}
 跑起来
 ------------
 ```bash
-cd ${Code}
+cd ${superset_source}
 superset/bin/superset runserver -p 12306
 ```
 
@@ -50,7 +50,7 @@ superset/bin/superset runserver -p 12306
 ------------
 
 ```bash
-cd ${Code}
+cd ${superset_source}
 . ${superset_env}/bin/activate
 export PYTHONPATH=.:${PYTHONPATH}
 superset/bin/superset runserver -p 12306
