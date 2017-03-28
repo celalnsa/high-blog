@@ -16,32 +16,33 @@ categories:
 准备virtualenv
 ------------
 
-创建一个virtualenv, 叫做${superset_source}
+创建一个virtualenv, ${superset_env}
 ```bash
-virtualenv superset_source
+virtualenv ${superset_env}
 ```
 安装依赖, 参考末尾的[requirements.txt](#requirements.txt)
 ```bash
-cd superset_source
+cd ${superset_env}
 pip install -r requirements.txt
 . bin/activate
 ```
 
 
-cd到代码目录 举例: ~/git/third_part/airbnb_superset
+cd到代码目录 举例: ${Code}
 ```bash
-cd ~/git/third_part/airbnb_superset
+cd ${Code}
 cd superset/static/assets
 npm install
 npm run prod
+cd ${Code}
 export PYTHONPATH=.:${PYTHONPATH}
 ```
 
 
 跑起来
 ------------
-
 ```bash
+cd ${Code}
 superset/bin/superset runserver -p 12306
 ```
 
@@ -49,8 +50,8 @@ superset/bin/superset runserver -p 12306
 ------------
 
 ```bash
-cd ~/git/third_part/airbnb_superset
-cd superset/static/assets
+cd ${Code}
+. ${superset_env}/bin/activate
 export PYTHONPATH=.:${PYTHONPATH}
 superset/bin/superset runserver -p 12306
 ```
