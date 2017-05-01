@@ -29,7 +29,7 @@ copyright: true
 canonical: true
 
 # Change headers hierarchy on site-subtitle (will be main site description) and on all post/pages titles for better SEO-optimization.
-seo: false
+seo: true
 
 # ---------------------------------------------------------------
 # Menu Settings
@@ -71,9 +71,9 @@ menu_icons:
 # ---------------------------------------------------------------
 
 # Schemes
-#scheme: Muse
+# scheme: Muse
 scheme: Mist
-#scheme: Pisces
+# scheme: Pisces
 
 
 # ---------------------------------------------------------------
@@ -136,7 +136,7 @@ font:
 social:
   #LinkLabel: Link
   GitHub: https://github.com/celalnsa
-  微博: http://weibo.com/celalnsa
+  微博: http://weibo.com/518856012
   知乎: https://www.zhihu.com/people/celalnsa
 
 # Social Links Icons
@@ -151,6 +151,7 @@ social_icons:
   GitHub: github
 #  Twitter: twitter
   微博: weibo
+  知乎: id-card-o
 
 
 # Sidebar Avatar
@@ -279,7 +280,7 @@ highlight_theme: "night eighties"
 
 # MathJax Support
 mathjax:
-  enable: false
+  enable: true
   per_page: false
   cdn: //cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML
 
@@ -288,7 +289,7 @@ mathjax:
 #swiftype_key:
 
 # Baidu Analytics ID
-#baidu_analytics:
+baidu_analytics: 8ce590abf61d9db7adc4efbff0be3cd1
 
 # Duoshuo ShortName
 #duoshuo_shortname:
@@ -303,7 +304,7 @@ disqus:
 #hypercomments_id:
 
 # Gentie productKey
-#gentie_productKey:
+# gentie_productKey: 91b3102ae8e14f939521d6012cc9c7d2
 
 # changyan
 changyan:
@@ -317,7 +318,7 @@ changyan:
 
 # Support for LiveRe comments system.
 # You can get your uid from https://livere.com/insight/myCode (General web site)
-#livere_uid: your uid
+livere_uid: MTAyMC8yODQzOS81MDEw
 
 # Baidu Share
 # Available value:
@@ -393,9 +394,9 @@ vkontakte_api:
 # Show number of visitors to each article.
 # You can visit https://leancloud.cn get AppID and AppKey.
 leancloud_visitors:
-  enable: false
-  app_id: #<app_id>
-  app_key: #<app_key>
+  enable: true
+  app_id: Y7Rbw3XECCfCjlrJ0S08UIGC-gzGzoHsz
+  app_key: hlV6xwsjHOEEjyDNS6Iqvhj2
 
 # Show PV/UV of the website/page with busuanzi.
 # Get more information on http://ibruce.info/2015/04/04/busuanzi/
