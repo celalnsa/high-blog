@@ -304,7 +304,7 @@ disqus:
 #hypercomments_id:
 
 # Gentie productKey
-# gentie_productKey: 91b3102ae8e14f939521d6012cc9c7d2
+gentie_productKey: 91b3102ae8e14f939521d6012cc9c7d2
 
 # changyan
 changyan:
@@ -318,7 +318,7 @@ changyan:
 
 # Support for LiveRe comments system.
 # You can get your uid from https://livere.com/insight/myCode (General web site)
-livere_uid: MTAyMC8yODQzOS81MDEw
+# livere_uid: MTAyMC8yODQzOS81MDEw
 
 # Baidu Share
 # Available value:
