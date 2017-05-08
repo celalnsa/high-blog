@@ -1,11 +1,11 @@
 ---
-title: "[函数式编程实践]-缓存函数执行结果"
+title: "函数式编程实践-缓存函数执行结果"
 date: 2017-04-27 20:00:06
 tags:
     - functional-programing
     - python
 categories:
-    - 写代码
+    - 术业
 ---
 
 受函数式编程思想启发, 实现方便的cache装饰器

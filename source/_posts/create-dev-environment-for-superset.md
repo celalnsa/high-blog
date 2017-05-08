@@ -5,7 +5,7 @@ tags:
     - superset
     - python
 categories:
-    - 写代码
+    - 术业
 ---
 
 本篇文章记录如何创建一个superset的开发环境

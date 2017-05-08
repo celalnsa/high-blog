@@ -6,7 +6,7 @@ tags:
     - decorator
     - react-native
 categories:
-    - 写代码
+    - 术业
 ---
 
 本篇文章记录如何在react-native中使用es7的decorator提案

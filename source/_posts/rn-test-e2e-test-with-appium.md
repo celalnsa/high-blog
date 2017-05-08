@@ -5,9 +5,10 @@ tags:
     - react-native
     - automated-test
     - appium
+    - android
     - python
 categories:
-    - 写代码
+    - 术业
 ---
 
 本篇文章记录如何在react-native中使用appium进行e2e自动化测试
