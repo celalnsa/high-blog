@@ -2,9 +2,12 @@
 title: 内自省与对世界的宽容
 date: 2017-06-18 23:27:59
 tags:
+    - think
 categories:
+    - 他的国
 ---
 
+<!-- more -->
 
 内自省。
 
