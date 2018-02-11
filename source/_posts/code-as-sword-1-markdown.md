@@ -6,6 +6,7 @@ tags:
     - document
 categories:
     - 工具
+mathjax: true
 ---
 
 本文可被看做用Markdown写文档的基础教程。
@@ -14,7 +15,7 @@ categories:
 
 ### 例
 常常会有整理文档的需求，以前都是用Word，排版麻烦，发给别人的时候可能还有兼容问题。Markdown作为纯文本，源文件清晰明了，也可以轻松地转成pdf/ppt/html等其他格式。
-入门的话推荐用网页版如[]()先体验下，下图是一个简单的例子。
+入门的话推荐用网页版如[https://zybuluo.com/mdeditor](https://zybuluo.com/mdeditor)先体验下，下图是一个简单的例子。
 
 ![Markdown简单例子](/asserts/images/markdown_mj.png)
 
@@ -121,14 +122,11 @@ like this `print 'hello world'`
 
 like this `print 'hello world'`
 
-代码块用一对\`\`\`包裹
-
-```
+代码块用一对\`\`\`包裹:
 \`\`\`
 def hello():
     print 'hello world'
 \`\`\`
-```
 
 ```
 def hello():
