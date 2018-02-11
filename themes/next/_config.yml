@@ -136,9 +136,9 @@ font:
 social:
   #LinkLabel: Link
   GitHub: https://github.com/celalnsa
-  微博: http://weibo.com/518856012
-  知乎: https://www.zhihu.com/people/celalnsa
-  QZone: http://405037956.qzone.qq.com
+  # 微博: http://weibo.com/518856012
+  # 知乎: https://www.zhihu.com/people/celalnsa
+  # QZone: http://405037956.qzone.qq.com
 
 # Social Links Icons
 # Icon Mapping:
