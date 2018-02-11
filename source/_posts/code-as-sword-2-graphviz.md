@@ -8,7 +8,7 @@ categories:
     - 工具
 ---
 
-本文介绍如何用graphviz画流程图
+本文介绍如何用graphviz画流程图。
 
 <!-- more -->
 
