@@ -43,7 +43,7 @@ def cache_result(f_key=lambda x: x, expired=0):
 可以看到在`new_func`的逻辑当中，只有当缓存里没有这个key，或者缓存的时间已经过期时，才会重新执行原来的函数`func`并更新缓存。
 
 ### 使用
-如下是一个需要读取redis数据的函数，注意这个函数不是一个纯函数，因为返回结果收到外部环境(redis缓存)影响。但这里数据的实时变化频次很低，近似地认为在一段时间(5秒)内，函数的执行结果是不变的。
+如下是一个需要读取redis数据的函数，注意这个函数不是一个纯函数，因为返回结果受到外部环境(redis缓存)影响。但这里数据的实时变化频次很低，近似地认为在一段时间(5秒)内，函数的执行结果是不变的。
 ```python
 @cache_result(lambda self, user_id, locale: RedisDataHelper.get_data_key(user_id, locale), 5)
 def get_data(self, user_id, locale):
