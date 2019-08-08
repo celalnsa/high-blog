@@ -71,7 +71,7 @@
 <link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="probability-theory,algorithm,load-balancing," />
+  <meta name="keywords" content="memory," />
 
 
 
@@ -87,18 +87,18 @@
 
 
 
-<meta name="description" content="Google论文Consistent Hashing with Bounded Loads的背景知识。">
-<meta name="keywords" content="probability-theory,algorithm,load-balancing">
+<meta name="description" content="长途火车，是这个年代即将逝去的美好空间。">
+<meta name="keywords" content="memory">
 <meta property="og:type" content="article">
-<meta property="og:title" content="概率论经典问题-球放桶里">
-<meta property="og:url" content="http://blog.hehigh.com/2017/05/02/probability-theory-classic-problem-balls-into-bins/index.html">
+<meta property="og:title" content="火车">
+<meta property="og:url" content="http://blog.hehigh.com/2019/08/08/train/index.html">
 <meta property="og:site_name" content="镜中">
-<meta property="og:description" content="Google论文Consistent Hashing with Bounded Loads的背景知识。">
+<meta property="og:description" content="长途火车，是这个年代即将逝去的美好空间。">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-11-07T04:09:09.953Z">
+<meta property="og:updated_time" content="2019-08-08T16:37:51.213Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="概率论经典问题-球放桶里">
-<meta name="twitter:description" content="Google论文Consistent Hashing with Bounded Loads的背景知识。">
+<meta name="twitter:title" content="火车">
+<meta name="twitter:description" content="长途火车，是这个年代即将逝去的美好空间。">
 
 
 
@@ -126,13 +126,13 @@
 
 
 
-  <link rel="canonical" href="http://blog.hehigh.com/2017/05/02/probability-theory-classic-problem-balls-into-bins/"/>
+  <link rel="canonical" href="http://blog.hehigh.com/2019/08/08/train/"/>
 
 
 
 
 
-  <title> 概率论经典问题-球放桶里 | 镜中 </title>
+  <title> 火车 | 镜中 </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -315,7 +315,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://blog.hehigh.com/2017/05/02/probability-theory-classic-problem-balls-into-bins/">
+    <link itemprop="mainEntityOfPage" href="http://blog.hehigh.com/2019/08/08/train/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="High">
@@ -336,7 +336,7 @@
             
             
               
-                概率论经典问题-球放桶里
+                火车
               
             
           </h2>
@@ -351,8 +351,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-02T12:29:24+08:00">
-                2017-05-02
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-08-08T23:48:31+08:00">
+                2019-08-08
               </time>
             
 
@@ -374,8 +374,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/术业/" itemprop="url" rel="index">
-                    <span itemprop="name">术业</span>
+                  <a href="/categories/他的国/" itemprop="url" rel="index">
+                    <span itemprop="name">他的国</span>
                   </a>
                 </span>
 
@@ -391,7 +391,7 @@
 
           
           
-             <span id="/2017/05/02/probability-theory-classic-problem-balls-into-bins/" class="leancloud_visitors" data-flag-title="概率论经典问题-球放桶里">
+             <span id="/2019/08/08/train/" class="leancloud_visitors" data-flag-title="火车">
                <span class="post-meta-divider">|</span>
                <span class="post-meta-item-icon">
                  <i class="fa fa-eye"></i>
@@ -420,15 +420,24 @@
       
 
       
-        <p>Google论文<a href="http://research.google.com/pubs/pub45756.html" target="_blank" rel="noopener">Consistent Hashing with Bounded Loads</a>的背景知识。</p>
+        <p>长途火车，是这个年代即将逝去的美好空间。</p>
 <a id="more"></a>
-<p>最近看到Google一篇论文<a href="http://research.google.com/pubs/pub45756.html" target="_blank" rel="noopener">Consistent Hashing with Bounded Loads</a>，提出一种新的算法，使得在动态负载均衡的场景中，增删节点的时候流量切换更加平缓。</p>
-<p>可以通过参考wiki百科<a href="https://en.wikipedia.org/wiki/Balls_into_bins" target="_blank" rel="noopener">Balls into bins</a>，了解其背后的原理。</p>
-<p>在计算机科学中，常常会有资源分配的问题，其中一个典型的例子是分布式服务的负载均衡：可以简单地理解为有n个桶(服务器)，需要装下m个球(客户端)。为了能让客户端尽可能随机分布在各个服务器，以保证服务器资源的平衡，比较常见的做法是通过计算给每个客户端生成一个一致性hash值，映射到服务器。实际上对大多数服务而言，m是一个无穷的值，因为客户端的请求总是源源不断地涌来。但当服务器稳定运行时，单位时间服务器需要处理的请求可以认为是近似固定的。</p>
-<p>首先提出一种最均衡的方式，那就是每个球在投放之前，先判断每个桶当前的装球量，然后选取负载最低的桶，但实际应用中因为查询已占用资源的也有明显的开销，所以通常并不会这样做。</p>
-<p>考虑一种特殊情况：m=n，比较容易理解，如果在这种情况下能够达到负载均衡，那么在m&gt;n的情况下，理论上也总是能够分配均衡。<br>
-进一步，当m=n的时候，如果随机把n个球放进n个桶里，那么一定会有一个或多个桶分配的球比其他的桶多，导致分布并不像想象中那么均匀，因为每个球都有1/n的概率被丢到这个桶里。<br>
-一种优化的方案是，每个球先随机选取2个桶，然后判断这两个桶当前的装球量，最后选择负载的桶来投放。按照<a href="https://link.springer.com/chapter/10.1007%2F3-540-49543-6_13" target="_blank" rel="noopener">计算结果</a>，已经能极大程度地满足负载均衡和快速选取资源的需要。</p>
+<p>不得不感叹国家和个体的高速发展。很多年没坐过几十个小时的火车了，现在的旅程总是飞机高铁，匆匆忙忙。</p>
+<p>火车给人一种强烈的节奏感，稳定的，持续的，行进中，就像吉他熟悉的随意的T1T2T1T2，往复循环。<br>
+当你不知道如何度量时间的流逝，想想这种感觉，窗外的风景一帧帧滑过，铁轨在无限延伸中从平行到交错再到平行，金属碰撞和摩擦产生的咔嚓声，伴随着同样的节拍发生，像一个超长的电影镜头。</p>
+<p>如果旅行的目的是感受不同的人生，可以在长途火车得到极致的实现，狭小的空间里，几个陌生人不得不一起吃喝睡，交换座位，有时还会掏心交谈。<br>
+这些人里，有外出务工的青年男女，皮肤黝黑，散发着汗臭味，坦诚粗旷，从不缺少微笑。<br>
+有常年留守在家念书的孩子，即将与许久不见的父母相聚，兴奋地奔跑吵闹。<br>
+有年轻的男女朋友，安安静静，仿佛置身在只有他们两个人的世界。<br>
+有法国来华师大交换的外国学生，穿着人字拖走过云贵川，用刚过四级的普通话和周围的人交谈。<br>
+除此之外，还有列车乘务员，推着餐车卖盒饭零食饮料的，每一个中途到站站台上卖东西的小贩，贵阳的叫化鸡十块钱一只，上饶的鸡腿五块钱两个，都在向你展示这个广袤大地上不同的风土。<br>
+大二的暑假，在火车上认识了曾经驻扎中缅边境的武警战士。那天下午刚上车的时候，我提出想和他交换窗边的座位，被他言语粗暴的拒绝，晚餐期间他一个人喝了一瓶二锅头，开始为了下午的事情和我道歉，解释说是因为上车前被人偷了身上仅有的两万块钱，懊恼不知道怎么和妻子交代。后来的时间里，他又给我讲了在部队期间的经历，关于缅甸的人和文化，金三角的危险交易，而我就像读了一本名字叫某某历险记的小说，窥见一段不属于我的生活。</p>
+<p>在火车车厢有限的空间里独处，阅读，思考，听音乐，回忆远方的人和往事。<br>
+也曾经单曲循环范范范玮琪的你是答案，心中牵挂一个叫做鸡蛋的挚友。那时候的友情啊，很认真，用少不经事的言语和文字，强烈而含蓄地表达，某一种不可失去。<br>
+读过平凡的世界，而后相继读了很多乡土文学，每一个故事都是地方特色明显，个体命运在群体命运中跌宕，从那时开始，对这个国家的每一片土地，每一种文化，产生了向往和热爱，对这个世界每一个不一样的人，有理解和关怀。我们都生活在这个平凡的世界，努力让生命不平凡。<br>
+读过蒙田随笔，了解另一个世界的另一种哲学，认识到更多人类思考的先驱，学会通过辩论思考和解决问题。</p>
+<p>火车只是一种交通工具，于我来说，也许它是一段特殊的旅程，在每次出发和到达之间，短暂体验轨迹外的生活。<br>
+须知世间参差多态，乃是幸福的本源。</p>
 
       
     </div>
@@ -457,7 +466,7 @@
     </li>
     <li class="post-copyright-link">
       <strong>本文链接：</strong>
-      <a href="http://blog.hehigh.com/2017/05/02/probability-theory-classic-problem-balls-into-bins/" title="概率论经典问题-球放桶里">http://blog.hehigh.com/2017/05/02/probability-theory-classic-problem-balls-into-bins/</a>
+      <a href="http://blog.hehigh.com/2019/08/08/train/" title="火车">http://blog.hehigh.com/2019/08/08/train/</a>
     </li>
     <li class="post-copyright-license">
       <strong>版权声明： </strong>
@@ -473,11 +482,7 @@
       
         <div class="post-tags">
           
-            <a href="/tags/probability-theory/" rel="tag"># probability-theory</a>
-          
-            <a href="/tags/algorithm/" rel="tag"># algorithm</a>
-          
-            <a href="/tags/load-balancing/" rel="tag"># load-balancing</a>
+            <a href="/tags/memory/" rel="tag"># memory</a>
           
         </div>
       
@@ -490,8 +495,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/04/28/rn-test-e2e-test-with-appium/" rel="next" title="在react-native中利用appium进行自动化集成测试">
-                <i class="fa fa-chevron-left"></i> 在react-native中利用appium进行自动化集成测试
+              <a href="/2019/07/12/year-28/" rel="next" title="年[28]">
+                <i class="fa fa-chevron-left"></i> 年[28]
               </a>
             
           </div>
@@ -499,10 +504,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2017/05/06/music-yezi-asang/" rel="prev" title="叶子">
-                叶子 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
