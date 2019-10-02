@@ -1688,7 +1688,7 @@ pre .javascript .function {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #fff160;
+  background: #52ffff;
 }
 .links-of-blogroll {
   font-size: 13px;
@@ -2778,5 +2778,5 @@ hr {
 }
 @font-face {
   font-family: HeHigh;
-  src: url("/fonts/hehigh_font.ttf");
+  src: url("/fonts/high_hand.ttf");
 }
