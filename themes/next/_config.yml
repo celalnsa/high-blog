@@ -94,14 +94,14 @@ font:
   global:
     # external: true will load this font family from host.
     external: true
-    # family: Lato
-    family: HeHigh
+    family: Lato
+    # family: HeHigh
 
   # Font settings for Headlines (h1, h2, h3, h4, h5, h6)
   # Fallback to `global` font settings.
   headings:
     external: true
-    family:
+    family: HeHigh
 
   # Font settings for posts
   # Fallback to `global` font settings.
