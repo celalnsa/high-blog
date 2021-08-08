@@ -216,7 +216,7 @@ h6 {
   padding: 0;
   font-weight: bold;
   line-height: 1.5;
-  font-family: 'Lato', "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: 'HeHigh', 'Lato', "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 h2,
 h3,
@@ -1688,7 +1688,7 @@ pre .javascript .function {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #ffff85;
+  background: #731cf5;
 }
 .links-of-blogroll {
   font-size: 13px;
@@ -2775,4 +2775,8 @@ hr {
     width: auto;
     text-align: center;
   }
+}
+@font-face {
+  font-family: HeHigh;
+  src: url("/fonts/high_hand.ttf");
 }
