@@ -1,0 +1,990 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>函数式编程实践-缓存函数执行结果</title>
+    <url>/2017/04/27/FP-practice-function-result-cache/</url>
+    <content><![CDATA[<p>受函数式编程思想启发, 实现Python函数缓存装饰器。</p>
+<span id="more"></span>
+<h3 id="纯函数"><a class="header-anchor" href="#纯函数">#</a>纯函数</h3>
+<p>学习函数式编程可以看<a href="https://github.com/llh911001/mostly-adequate-guide-chinese">JS函数式编程指南中文版</a><br>
+纯函数可测，可重演，最重要的是，因为同样的输入一定会产生同样的输出，使得函数的执行结果是可以被缓存的。</p>
+<h3 id="实现"><a class="header-anchor" href="#实现">#</a>实现</h3>
+<p>利用Python的闭包来实现一个缓存函数执行结果的装饰器：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">cache_result</span>(<span class="params">f_key=<span class="keyword">lambda</span> x: x, expired=<span class="number">0</span></span>):</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    @param f_key: cache_key生成函数</span></span><br><span class="line"><span class="string">    @param expired: cache有效时间</span></span><br><span class="line"><span class="string">    @return: 带cache功能的原函数</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">dec</span>(<span class="params">func</span>):</span></span><br><span class="line">        cache_v = &#123;&#125;</span><br><span class="line">        cache_t = &#123;&#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">new_func</span>(<span class="params">*args, **kwargs</span>):</span></span><br><span class="line">            key = f_key(*args, **kwargs)</span><br><span class="line">            <span class="keyword">if</span> key <span class="keyword">not</span> <span class="keyword">in</span> cache_t <span class="keyword">or</span> expired <span class="keyword">and</span> time.time() - cache_t[key] &gt;= expired:</span><br><span class="line">                cache_v[key] = func(*args, **kwargs)</span><br><span class="line">                cache_t[key] = time.time()</span><br><span class="line">            <span class="keyword">return</span> cache_v[key]</span><br><span class="line">        <span class="keyword">return</span> new_func</span><br><span class="line">    <span class="keyword">return</span> dec</span><br></pre></td></tr></table></figure>
+<p><code>f_key</code>是函数入参生成的key，相当于唯一标识一组入参，默认值是id函数(像<code>x =&gt; x</code>这样的)。<br>
+<code>expired</code>是函数缓存的有效时间。<br>
+可以看到在<code>new_func</code>的逻辑当中，只有当缓存里没有这个key，或者缓存的时间已经过期时，才会重新执行原来的函数<code>func</code>并更新缓存。</p>
+<h3 id="使用"><a class="header-anchor" href="#使用">#</a>使用</h3>
+<p>如下是一个需要读取redis数据的函数，注意这个函数不是一个纯函数，因为返回结果受到外部环境(redis缓存)影响。但这里数据的实时变化频次很低，近似地认为在一段时间(5秒)内，函数的执行结果是不变的。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">@cache_result(<span class="params"><span class="keyword">lambda</span> self, user_id, locale: RedisDataHelper.get_data_key(<span class="params">user_id, locale</span>), <span class="number">5</span></span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_data</span>(<span class="params">self, user_id, locale</span>):</span></span><br><span class="line">    ret = self.redis_db.get(RedisDataHelper.get_data_key(user_id, locale))</span><br><span class="line">    <span class="keyword">return</span> ret</span><br></pre></td></tr></table></figure>
+<p>加上缓存的装饰器后，5秒内如果调用的入参经过RedisDataHelper.get_data_key产生了已经缓存过的key，则在有效期5秒内会优先返回缓存的结果。</p>
+<h3 id="延伸"><a class="header-anchor" href="#延伸">#</a>延伸</h3>
+<p>Python3.2开始，<code>functools</code>模块内置了<code>lru_cache</code>装饰器，参考<a href="https://docs.python.org/3.6/library/functools.html#functools.lru_cache">文档</a>。<br>
+这个装饰器会自动把函数的入参当做缓存的key来使用，并且按照最近访问的原则控制缓存的大小。<br>
+下面是官方的一个例子，用一个无限大的缓存空间来实现fibonacci数的动态规划算法：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">@lru_cache(<span class="params">maxsize=<span class="literal">None</span></span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">fib</span>(<span class="params">n</span>):</span></span><br><span class="line">    <span class="keyword">if</span> n &lt; <span class="number">2</span>:</span><br><span class="line">        <span class="keyword">return</span> n</span><br><span class="line">    <span class="keyword">return</span> fib(n-<span class="number">1</span>) + fib(n-<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<p>有兴趣的话可以看看<a href="https://github.com/python/cpython/blob/3.6/Lib/functools.py">源代码</a>里<code>lru_cache</code>装饰器的实现，大致的思路差不多，增加了lru策略以及锁相关的实现。</p>
+]]></content>
+      <categories>
+        <category>术业</category>
+      </categories>
+      <tags>
+        <tag>functional-programing</tag>
+        <tag>python</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>少年一串</title>
+    <url>/2019/10/28/a-string-of-life/</url>
+    <content><![CDATA[<p>最近有很多关于少年的传闻和争议。</p>
+<span id="more"></span>
+<p>记得高二那年试做高考卷，作文题目是《还__本来面目》”，当时少年无知，写了篇《还教育本来面目》，中心思想是教育的目的，为了让人更好地生活。<br>
+内核简单，这么些年没发生改变。想写几行注脚，补充那篇作文没能说清楚的问题：抛开功利的追求，教育到底应该让人学会什么？</p>
+<p>想到佛常常挂在嘴边的四个修行境界：无我相，无人相，无众生相，无寿者相。</p>
+<p>零. 我相。<br>
+学会爱自己。<br>
+古希腊人说，认识你自己。<br>
+你需要意识到，“我”之存在于世界。在你生命所有的时间里，永远打交道的那个人，就是“我”。<br>
+不断和自己对话，了解自己的感受，知道自己是什么样的人。练习一种表达的方式，写作，摄影，绘画，音乐，运动甚至是表演。找到自己喜欢的事情，但不要把纯粹的感官享受当做喜欢。学会自我认同和批判。<br>
+没有什么比认识自己更重要，大多数情况下，这个状态也是最难的。人生修行的最终目的，就是认识并接受自己。<br>
+你会常常需要一面镜子，这面镜子在四面八方，后面的每一个修行境界，都使其更加完整。</p>
+<p>一. 无我相，人相。<br>
+学会爱他人。<br>
+你开始学着和其他人相处了，发现每个人的意识中都有一个“我”，这些“我”各不相同。亲人，朋友，老师，同事，每一个有缘结伴同行的人，都是宝藏。<br>
+走进其他人心里，也让其他人走进你心里。<br>
+你发现亲密的人相处，有温暖，也有伤害。你开始学着向他们表达自己的感受，也聆听他们的想法。<br>
+你要像珍爱自己内心的“我”一样，尊重并珍爱他人的“我”。<br>
+第一个训练，尝试说话的时候，不要带“我”。<br>
+但是千万记住，无我相不是丢掉自己的“我”，而是要尊重每一个人的“我”。不要去一个不属于自己的世界找存在感，也不要因为一些摩擦动摇自己重要的想法。</p>
+<p>二. 无人相，众生相。<br>
+学会爱众生。<br>
+渐渐地，你活动的范围越来越大，身边的人越来越多，你意识到自己经历的只是世界的一小部分。这个世界有千千万万亿亿的人甚至是其他生物，他们和你一样，有意识，有知觉。你发现每个生命都是那么相似，却又那么独一无二。<br>
+你为世界的丰富多态，感到惊叹和幸福。你开始把茫茫众生的每一个生命，都当成和你一样伟大的、美好的生命。<br>
+你不再纠结于地域，种群，不在乎每个人身上的各种标签，尊重其他生命保持独一无二的权利。<br>
+去不同的地方旅行，找街边巷尾混乱的小摊，和几个朋友或者陌生人一起，往沾了油烟黏糊糊的塑料凳上坐，撸每一根独一无二的串，品尝这尘世间烟火的气息。<br>
+感受《人生一串》中这样的场景：</p>
+<blockquote>
+<p>短暂的过客，来去匆匆，而那一声招呼，又是一次生命中的萍水相逢。<br>
+“您，几位啊？”</p>
+</blockquote>
+<p>三. 无众生相，寿者相。<br>
+学会爱生命。<br>
+从一个时刻开始，体会到古人所云，“死生亦大矣”。也许是心爱的偶像去世，也许是挚爱的亲友老去，也去是新闻里见到的各种天灾事故？<br>
+没有人知道死亡的那一边是什么，但大家都害怕自己会在那一刻遁入虚无，所有的意识，我相，人相，众生相都会失去意义。<br>
+你开始爱惜和尊重生命，并且懂得无论是自己，还是其他生命，一样宝贵。</p>
+<p>四. 无寿者相。<br>
+学会爱，这就够了。<br>
+无论你怎么珍惜生命，在漫漫历史长河中，每一个生命都只能度过有限的时间，但你注意到，一个生命的长短不能只用活着的时间来度量，有的人影响了春秋万世，到今天你都能记得他们生前的言行，也就是人们常说的“不朽”。<br>
+有个朋友的父亲曾经说，人恐惧死亡，有两种方式可以缓解，一种是繁衍后代，一种是有信仰。繁衍后代是因为会有人带着你的基因，你的思想继续活在世上，由他们可以推导出你存在过的证明。而信仰则是让自己皈依一个不朽的精神，和这个精神一样超脱生死。<br>
+今天的造业力是未来世界的原因，如果能够，在你离开之前，把世界变得比你来之前更好，如此你到这个世界上走一遭也就有了意义。在那样的一个世界里，不管有没有人记得你的名字，你说过的话，做过的事，你都已经被刻在世界的因果中，谁也抹不掉。<br>
+再简单一点，学会爱，这就够了。</p>
+<p>希望你活这一辈子，能够感悟《人生一串》最后刷屏的弹幕：</p>
+<blockquote>
+<p>谢谢款待。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>教育</tag>
+        <tag>少年的你</tag>
+        <tag>人生一串</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>西安游记</title>
+    <url>/2018/08/24/a-trip-to-xian/</url>
+    <content><![CDATA[<p>打包准备离开西安的时候，居然有一点不舍。</p>
+<span id="more"></span>
+<p>对西安的向往源自很多东西，儿时的电视剧「寻秦记」，充满神秘的秦始皇陵，梦幻西游的场景，玄奘，大雁塔，李世民，武则天，无数熟悉的名字和故事。</p>
+<p>这个中国历史上重要的古都，任何一片砖瓦都充满了故事性。<br>
+在博物馆，看到智慧的祖先从打磨石器骨器，到陶器青铜器瓷器；从无意间给陶上了釉，到唐三彩；从学习和模仿自然，到脱离基本生存需求的创新创作，以及今天传统艺术的千万种表达方式。<br>
+无数古人刻下的石碑，孟子，大学，中庸，兰亭序，一篇篇从小到大学习的经典，想象着它们是如何通过石碑被埋藏又被发现。如果古人见到他们写的东西在今天被人研究，甚至在汉文化中占据如此重要的位置，他们很多事情的做法会不会不一样，会不会有什么话特别想要对今天的人说？<br>
+那些断首断臂，残缺破碎的佛像，是怎样被工匠制造，精心雕琢，怎样接受信徒的参拜，又是怎样被打倒，被破坏。<br>
+在西安城墙上暴走，看着夜晚一个个灯笼亮起来，城内外灯火通明，好奇以前的百姓是如何进出城，守城的士兵是如何把这么多的灯点亮，是不是也会有百姓像那个大叔一样，绕城墙一圈跑步健身？<br>
+兵马俑为什么每个陶俑的脸都不一样，是不是真的按照当时人的面孔制作的？为啥没看到古天乐？<br>
+嬴政很神秘，始皇陵更神秘，作为一个39岁就一统中国的英雄，我们能看到的只有一个写着秦始皇帝墓的石碑和一个种满了柏树的山坡。有点像哈利波特里的绿色迷宫，下雨，无人，阴森森。<br>
+那些损坏却被保存至今的石碑，佛像，城墙，不会说话，却给你讲了许多年代久远的故事。</p>
+<p>其他的点。<br>
+出行方便，高铁，地铁，公交，共享单车，无缝衔接。<br>
+物价极低，吃住成本是上海的一半。吃的东西几乎都跟面有关，各种夹馍，泡馍，油泼扯面，臊子面，味道不错。</p>
+<p>关于人的故事。<br>
+1.去到一家连锁的餐厅，等着像上海一样有个服务员进来问你几位然后带你进去，结果没人理我[捂脸]。问收银员是不是我要先来她这里下单，她说不然嘞，然后问是不是自己找地方坐，她说不然嘞。感觉自己像个被惯坏的智障哈哈哈。<br>
+2.一个初中同学，一家人在西安做生意，唯一的印象就是有钱[两个捂脸]。<br>
+3.两个西安本地人，一个已经工作，一个才读大三。都还没去过陕西历史博物馆，抱着跟我一样的心情排队换票和参观，还通过我了解兵马俑和始皇陵[三个捂脸]。</p>
+]]></content>
+      <categories>
+        <category>世界</category>
+      </categories>
+      <tags>
+        <tag>travel</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>2018新年前的一个马蜂窝</title>
+    <url>/2018/02/15/a-vespidae-before-2018-chinese-new-year/</url>
+    <content><![CDATA[<p>亢龙有悔。</p>
+<span id="more"></span>
+<p>易经说亢龙有悔，当你春风得意的时候，马上可能马失前蹄。</p>
+<p>第一次对这件事有一个哲学性地思考，是小学六年级快要小升初考试的时候，第二次市里统一考试，有点糟糕。我去找平时严肃的语文老师，她问我：“考砸啦，没关系啊，我就希望你这次考砸。上次年级第一，你都快飘起来了，考砸一次能让你沉下心，毕竟下次才是真正重要的考试。”听完她的话，胸口涌动，视线模糊。语文老师是真的了解我，至今很感谢她给我上了如此重要的一课。</p>
+<p>古人说，德不配位，必有灾殃。应该是我此生至今最难忘的训诫，每当自己或者别人有什么福禄或者灾祸，我总会思考，自己或者别人是否能承受，是否应得。尽量做到面色红润，谨小慎微。</p>
+<p>然而修为不够，底子不够沉的人总是会浮出水面，然后翻车。最近应该是没那么谨慎注意，加上一点点繁事缠身，就犯了大错。</p>
+<p>犯错很难过，就更应该把事情做好。</p>
+<p>线上无小事，唯有自洽的体系与小心。</p>
+<p>与年轻共勉。新年快乐。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>think</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>苦瓜</title>
+    <url>/2018/09/04/balsam-pear/</url>
+    <content><![CDATA[<p><img src="/asserts/images/injection_boy.jpeg" alt="打针的男孩"></p>
+<p>对苦痛的觉知也是一种幸福。</p>
+<span id="more"></span>
+<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86 src="//music.163.com/outchain/player?type=2&id=408307255&auto=1&height=66"></iframe>
+<p>还记得第一次打针的时候吗，身边的小朋友们好多都哭了。<br>
+第一次吃苦瓜的时候呢，哇的一声就吐出来了。</p>
+<p>今天你还觉得他们给你痛苦吗，恭喜你。</p>
+<p>最怕是你经历了无数的苦痛，以至于麻木到失去感知的能力。</p>
+<p>长辈们总喜欢让孩子学吃苦，并且把能吃苦当成是一种令人骄傲的素质，我想他们是在帮助你提前为将要认识的世界做好准备。</p>
+<p>没什么特别的事，不要做英雄。</p>
+<p>喜欢小仙儿说的，</p>
+<blockquote>
+<p>“小小年纪就要有小小年纪的幼稚和不懂事”。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>stream-of-consciousness</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>创建与jenkins通信的微信机器人</title>
+    <url>/2017/05/11/building-a-wechat-bot-with-jenkins-api/</url>
+    <content><![CDATA[<p>基于当前自身对jenkins的使用经历, 加上最近发现了很多开源的微信api实现, 构思一个利用微信来执行任务并且查询任务状态的机器人.</p>
+<span id="more"></span>
+<h3 id="微信api"><a class="header-anchor" href="#微信api">#</a>微信api</h3>
+<p>基于网页版微信的通信机制, 很多人实现了各种语言的微信机器人api.<br>
+比如Python实现的<a href="https://github.com/littlecodersh/ItChat">ItChat</a>和<a href="https://github.com/youfou/wxpy">wxpy</a>, 或者NodeJs实现的<a href="https://github.com/Chatie/wechaty">wechaty</a>.</p>
+<h3 id="jenkinsapi"><a class="header-anchor" href="#jenkinsapi">#</a>jenkinsapi</h3>
+<p>jenkins支持RESTful风格的接口调用, <a href="https://github.com/pycontribs/jenkinsapi">jenkinsapi</a>提供了一套封装。</p>
+<h3 id="实现-v2"><a class="header-anchor" href="#实现-v2">#</a>实现</h3>
+<p>先占坑，抽空再回来补上实现的部分。</p>
+]]></content>
+      <categories>
+        <category>术业</category>
+      </categories>
+      <tags>
+        <tag>jenkins</tag>
+        <tag>wechat</tag>
+        <tag>chatbot</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>[代码即利剑2]用graphviz画流程图</title>
+    <url>/2018/01/17/code-as-sword-2-graphviz/</url>
+    <content><![CDATA[<p>本文介绍如何用graphviz画流程图。</p>
+<span id="more"></span>
+<h3 id="工具安装"><a class="header-anchor" href="#工具安装">#</a>工具安装</h3>
+<p>从<a href="http://www.graphviz.org/download/">graphviz</a>下载安装</p>
+<h3 id="简单例子"><a class="header-anchor" href="#简单例子">#</a>简单例子</h3>
+<p>可通过运行一个简单例子，验证是否安装成功。<br>
+新建<code>test.dot</code>文件，内容如下：</p>
+<figure class="highlight abnf"><table><tr><td class="code"><pre><span class="line">digraph abc&#123;</span><br><span class="line">  a<span class="comment">;</span></span><br><span class="line">  b<span class="comment">;</span></span><br><span class="line">  c<span class="comment">;</span></span><br><span class="line">  d<span class="comment">;</span></span><br><span class="line"></span><br><span class="line">  a -&gt; b<span class="comment">;</span></span><br><span class="line">  b -&gt; d<span class="comment">;</span></span><br><span class="line">  c -&gt; d<span class="comment">;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>生成svg：</p>
+<figure class="highlight cmake"><table><tr><td class="code"><pre><span class="line">dot -Tsvg <span class="keyword">test</span>.dot -o <span class="keyword">test</span>.svg</span><br></pre></td></tr></table></figure>
+<p>生成的test.svg如下：<br>
+<img src="/asserts/images/test_graphviz.svg" alt="test_graphviz"></p>
+<h3 id="简单教程"><a class="header-anchor" href="#简单教程">#</a>简单教程</h3>
+<p>详细教程参考官方文档<a href="https://graphviz.gitlab.io/_pages/pdf/dotguide.pdf">dotguide</a></p>
+<h4 id="创建图"><a class="header-anchor" href="#创建图">#</a>创建图</h4>
+<figure class="highlight dts"><table><tr><td class="code"><pre><span class="line">digraph <span class="class">abc </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="添加节点"><a class="header-anchor" href="#添加节点">#</a>添加节点</h4>
+<p>可通过<code>[]</code>设置属性，常用<code>label</code>增加注解，<code>shape</code>指定形状，<code>color</code>指定颜色</p>
+<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">a [<span class="attribute">label</span>=<span class="string">&quot;节点a&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;triangle&quot;</span>];</span><br><span class="line">b [<span class="attribute">label</span>=<span class="string">&quot;节点b&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;circle&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">c [<span class="attribute">label</span>=<span class="string">&quot;节点c&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;point&quot;</span>];</span><br><span class="line">d [<span class="attribute">label</span>=<span class="string">&quot;节点d&quot;</span>];</span><br></pre></td></tr></table></figure>
+<h4 id="添加边"><a class="header-anchor" href="#添加边">#</a>添加边</h4>
+<p>可通过<code>[]</code>设置属性，常用<code>label</code>增加注解，<code>style</code>指定形状，<code>color</code>指定颜色</p>
+<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">a -&gt; b [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dashed&quot;</span>];</span><br><span class="line">b -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边bd&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dotted&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">c -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>];</span><br></pre></td></tr></table></figure>
+<h4 id="子图"><a class="header-anchor" href="#子图">#</a>子图</h4>
+<p>可通过<code>subgraph</code>创建子图，通过边在子图之间建立关联</p>
+<figure class="highlight perl"><table><tr><td class="code"><pre><span class="line">subgraph <span class="function"><span class="keyword">sub</span> </span>&#123;</span><br><span class="line">    <span class="keyword">x</span>;</span><br><span class="line">    <span class="keyword">y</span>;</span><br><span class="line">    z;</span><br><span class="line">    d -&gt; <span class="keyword">x</span> -&gt; <span class="keyword">y</span> -&gt; z;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="完整示例"><a class="header-anchor" href="#完整示例">#</a>完整示例</h4>
+<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">digraph abc &#123;</span><br><span class="line">  a [<span class="attribute">label</span>=<span class="string">&quot;节点a&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;triangle&quot;</span>];</span><br><span class="line">  b [<span class="attribute">label</span>=<span class="string">&quot;节点b&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;circle&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">  c [<span class="attribute">label</span>=<span class="string">&quot;节点c&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;point&quot;</span>];</span><br><span class="line">  d [<span class="attribute">label</span>=<span class="string">&quot;节点d&quot;</span>];</span><br><span class="line"></span><br><span class="line">  a -&gt; b [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dashed&quot;</span>];</span><br><span class="line">  b -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边bd&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dotted&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">  c -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>];</span><br><span class="line"></span><br><span class="line">  subgraph sub &#123;</span><br><span class="line">    x;</span><br><span class="line">    y;</span><br><span class="line">    z;</span><br><span class="line">    d -&gt; x -&gt; y -&gt; z;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>生成结果如下<br>
+<img src="/asserts/images/demo_graphviz.svg" alt="demo_graphviz"></p>
+]]></content>
+      <categories>
+        <category>工具</category>
+      </categories>
+      <tags>
+        <tag>graphviz</tag>
+        <tag>flow-chart</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>[代码即利剑1]用Markdown写文档</title>
+    <url>/2018/01/16/code-as-sword-1-markdown/</url>
+    <content><![CDATA[<p>本文可被看做用Markdown写文档的基础教程。</p>
+<span id="more"></span>
+<h3 id="例"><a class="header-anchor" href="#例">#</a>例</h3>
+<p>常常会有整理文档的需求，以前都是用Word，排版麻烦，发给别人的时候可能还有兼容问题。Markdown作为纯文本，源文件清晰明了，也可以轻松地转成pdf/ppt/html等其他格式。<br>
+入门的话推荐用网页版如<a href="https://zybuluo.com/mdeditor">https://zybuluo.com/mdeditor</a>先体验下，下图是一个简单的例子。</p>
+<p><img src="/asserts/images/markdown_mj.png" alt="Markdown简单例子"></p>
+<h3 id="语法"><a class="header-anchor" href="#语法">#</a>语法</h3>
+<h4 id="标题层次"><a class="header-anchor" href="#标题层次">#</a>标题层次</h4>
+<figure class="highlight clean"><table><tr><td class="code"><pre><span class="line"># 一级标题</span><br><span class="line">## 二级标题</span><br><span class="line">### 三级标题</span><br></pre></td></tr></table></figure>
+<h4 id="有序列表"><a class="header-anchor" href="#有序列表">#</a>有序列表</h4>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line"><span class="bullet">1.</span> aaa</span><br><span class="line"><span class="bullet">2.</span> bbb</span><br><span class="line"><span class="bullet">3.</span> ccc</span><br></pre></td></tr></table></figure>
+<ol>
+<li>aaa</li>
+<li>bbb</li>
+<li>ccc</li>
+</ol>
+<h4 id="无序列表"><a class="header-anchor" href="#无序列表">#</a>无序列表</h4>
+<figure class="highlight asciidoc"><table><tr><td class="code"><pre><span class="line"><span class="bullet">* </span>aaa</span><br><span class="line"><span class="bullet">* </span>bbb</span><br><span class="line"><span class="bullet">* </span>ccc</span><br></pre></td></tr></table></figure>
+<ul>
+<li>aaa</li>
+<li>bbb</li>
+<li>ccc</li>
+</ul>
+<h4 id="引用"><a class="header-anchor" href="#引用">#</a>引用</h4>
+<figure class="highlight mercury"><table><tr><td class="code"><pre><span class="line">&gt; Mr.High <span class="keyword">is</span> getting higher.</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>Mr.High is getting higher.</p>
+</blockquote>
+<h4 id="链接"><a class="header-anchor" href="#链接">#</a>链接</h4>
+<figure class="highlight awk"><table><tr><td class="code"><pre><span class="line">[绘制图表](https:<span class="regexp">//gi</span>thub.com<span class="regexp">/adrai/</span>flowchart.js)</span><br></pre></td></tr></table></figure>
+<p><a href="https://github.com/adrai/flowchart.js">绘制图表</a></p>
+<h4 id="图片"><a class="header-anchor" href="#图片">#</a>图片</h4>
+<figure class="highlight awk"><table><tr><td class="code"><pre><span class="line">![Mou icon](http:<span class="regexp">//</span>www.easyicon.net<span class="regexp">/api/</span>resizeApi.php?id=<span class="number">1174091</span>&amp;size=<span class="number">128</span>)</span><br></pre></td></tr></table></figure>
+<p><img src="http://www.easyicon.net/api/resizeApi.php?id=1174091&amp;size=128" alt="Mou icon"></p>
+<h4 id="字体"><a class="header-anchor" href="#字体">#</a>字体</h4>
+<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">**粗体**</span><br><span class="line">*斜体*</span><br><span class="line">~~删除线~~</span><br><span class="line">也可以用&lt;font&gt;标签包裹指定字体</span><br><span class="line">&lt;font <span class="attribute">face</span>=<span class="string">&quot;STCAIYUN&quot;</span>&gt;我是华文彩云&lt;/font&gt;</span><br><span class="line">&lt;font <span class="attribute">color</span>=gray <span class="attribute">size</span>=5&gt;color=gray&lt;/font&gt;</span><br><span class="line">&lt;font <span class="attribute">color</span>=#0099ff <span class="attribute">size</span>=5 <span class="attribute">face</span>=<span class="string">&quot;黑体&quot;</span>&gt;color=#0099ff <span class="attribute">size</span>=5 <span class="attribute">face</span>=<span class="string">&quot;黑体&quot;</span>&lt;/font&gt;</span><br></pre></td></tr></table></figure>
+<p><strong>粗体</strong><br>
+<em>斜体</em><br>
+<s>删除线</s><br>
+<font face="STCAIYUN">我是华文彩云</font><br>
+<font color=gray size=5>color=gray</font><br>
+<font color=#0099ff size=5 face="黑体">color=#0099ff size=5 face=“黑体”</font></p>
+<h4 id="表格"><a class="header-anchor" href="#表格">#</a>表格</h4>
+<figure class="highlight gherkin"><table><tr><td class="code"><pre><span class="line">|<span class="string"> Tables        </span>|<span class="string"> Are           </span>|<span class="string"> Cool  </span>|</span><br><span class="line">|<span class="string"> ------------- </span>|<span class="string">:-------------:</span>|<span class="string"> -----:</span>|</span><br><span class="line">|<span class="string"> col 3 is      </span>|<span class="string"> right-aligned </span>|<span class="string"> $1600 </span>|</span><br><span class="line">|<span class="string"> col 2 is      </span>|<span class="string"> centered      </span>|<span class="string">   $12 </span>|</span><br><span class="line">|<span class="string"> zebra stripes </span>|<span class="string"> are neat      </span>|<span class="string">    $1 </span>|</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th>Tables</th>
+<th style="text-align:center">Are</th>
+<th style="text-align:right">Cool</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>col 3 is</td>
+<td style="text-align:center">right-aligned</td>
+<td style="text-align:right">$1600</td>
+</tr>
+<tr>
+<td>col 2 is</td>
+<td style="text-align:center">centered</td>
+<td style="text-align:right">$12</td>
+</tr>
+<tr>
+<td>zebra stripes</td>
+<td style="text-align:center">are neat</td>
+<td style="text-align:right">$1</td>
+</tr>
+</tbody>
+</table>
+<h4 id="代码"><a class="header-anchor" href="#代码">#</a>代码</h4>
+<figure class="highlight axapta"><table><tr><td class="code"><pre><span class="line">行内代码用一对`包裹</span><br><span class="line"><span class="keyword">like</span> <span class="keyword">this</span> `<span class="keyword">print</span> <span class="string">&#x27;hello world&#x27;</span>`</span><br></pre></td></tr></table></figure>
+<p>like this <code>print 'hello world'</code></p>
+<p>代码块用一对```包裹:<br>
+```<br>
+def hello():<br>
+print ‘hello world’<br>
+```</p>
+<figure class="highlight ruby"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">hello</span><span class="params">()</span></span>:</span><br><span class="line">    print <span class="string">&#x27;hello world&#x27;</span></span><br></pre></td></tr></table></figure>
+<h4 id="公式"><a class="header-anchor" href="#公式">#</a>公式</h4>
+<p>用$$包裹LaTeX公式：</p>
+<figure class="highlight autoit"><table><tr><td class="code"><pre><span class="line">$e^&#123;\imath x&#125; = \<span class="built_in">cos</span>&#123;x&#125; + \imath\<span class="built_in">sin</span>&#123;x&#125;$</span><br></pre></td></tr></table></figure>
+<p>$e^{\imath x} = \cos{x} + \imath\sin{x}$</p>
+]]></content>
+      <categories>
+        <category>工具</category>
+      </categories>
+      <tags>
+        <tag>markdown</tag>
+        <tag>document</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>[代码即利剑4]用alda作曲</title>
+    <url>/2018/01/19/code-as-sword-4-alda/</url>
+    <content><![CDATA[<p>本文介绍如何使用alda编写曲谱。</p>
+<span id="more"></span>
+<p>alda的官方描述：A music programming language for musicians.<br>
+很酷吧。<br>
+可以在官方的<a href="http://alda-lang.github.io/web-demo/">web-demo</a>先体验一下</p>
+<h3 id="安装"><a class="header-anchor" href="#安装">#</a>安装</h3>
+<p>参考<a href="https://github.com/alda-lang/alda#installation">官方介绍</a>安装alda.<br>
+启动alda服务</p>
+<figure class="highlight ebnf"><table><tr><td class="code"><pre><span class="line"><span class="attribute">alda up</span></span><br></pre></td></tr></table></figure>
+<h3 id="语法-v2"><a class="header-anchor" href="#语法-v2">#</a>语法</h3>
+<p>首先尝试演奏一小段：</p>
+<figure class="highlight armasm"><table><tr><td class="code"><pre><span class="line"><span class="symbol">alda</span> play --<span class="meta">code</span> <span class="string">&quot;piano: c6 d12 e6 g12~4&quot;</span></span><br></pre></td></tr></table></figure>
+<p><code>piano: c6 d12 e6 g12~4</code>就是alda写乐谱时的基本格式<br>
+首先指定乐器<code>piano：</code>然后是音<code>c</code>和表示时长的<code>6</code></p>
+<h4 id="乐器"><a class="header-anchor" href="#乐器">#</a>乐器</h4>
+<p>alda支持的乐器<a href="https://github.com/alda-lang/alda/blob/master/doc/list-of-instruments.md">列表</a></p>
+<h4 id="音高"><a class="header-anchor" href="#音高">#</a>音高</h4>
+<p>十二平均律把音分成从低到高的<code>c c# d d# e f f# g g# a a# b</code><br>
+在alda里，可以表示为<code>c c+ d d+ e f f+ g g+ a a+ b</code>，当然降c可以表示为<code>c-</code><br>
+在乐谱的开头可以指定Octave为第几个八度：</p>
+<figure class="highlight apache"><table><tr><td class="code"><pre><span class="line"><span class="attribute">piano</span>: o<span class="number">3</span> c d e g</span><br></pre></td></tr></table></figure>
+<p>在乐谱中可以用<code>&gt;</code>将后续音符提高一个八度，用<code>&lt;</code>降低一个八度：</p>
+<figure class="highlight llvm"><table><tr><td class="code"><pre><span class="line"><span class="symbol">piano:</span> o<span class="number">4</span> <span class="keyword">c</span> d e g &gt; <span class="keyword">c</span> d e g &lt; <span class="keyword">c</span> d e g</span><br></pre></td></tr></table></figure>
+<h4 id="音长"><a class="header-anchor" href="#音长">#</a>音长</h4>
+<p>alda音符后面的数字指示音的长短：</p>
+<ul>
+<li>c4表示一个1/4拍的c，c8表示一个1/8拍的c，注意没指定时默认用之前指定过的音长，如<code>c2 d e</code>中c后面的d和e都会变成1/2拍</li>
+<li>g12~4表示一个1/12拍加1/4拍的g</li>
+</ul>
+<figure class="highlight apache"><table><tr><td class="code"><pre><span class="line"><span class="attribute">piano</span>: c<span class="number">6</span> d<span class="number">12</span> e<span class="number">6</span> g<span class="number">12</span>~<span class="number">4</span></span><br></pre></td></tr></table></figure>
+<h4 id="休止音符"><a class="header-anchor" href="#休止音符">#</a>休止音符</h4>
+<p>休止音符用r表示，仍然可以跟数字表示音长：</p>
+<figure class="highlight apache"><table><tr><td class="code"><pre><span class="line"><span class="attribute">piano</span>: c<span class="number">6</span> d<span class="number">12</span> e<span class="number">6</span> g<span class="number">12</span>~<span class="number">4</span> r<span class="number">4</span> c<span class="number">6</span> d<span class="number">12</span> e<span class="number">6</span> a<span class="number">12</span>~<span class="number">4</span></span><br></pre></td></tr></table></figure>
+<h4 id="和弦"><a class="header-anchor" href="#和弦">#</a>和弦</h4>
+<p>可以用/表示同时奏响，如：</p>
+<figure class="highlight awk"><table><tr><td class="code"><pre><span class="line">piano: c<span class="regexp">/e/g</span> c<span class="regexp">/e/g</span> c<span class="regexp">/e/</span>a c<span class="regexp">/e/</span>a</span><br></pre></td></tr></table></figure>
+<h4 id="多乐器合奏"><a class="header-anchor" href="#多乐器合奏">#</a>多乐器合奏</h4>
+<figure class="highlight apache"><table><tr><td class="code"><pre><span class="line"><span class="attribute">piano</span>:</span><br><span class="line">  <span class="attribute">c6</span> d<span class="number">12</span> e<span class="number">6</span> g<span class="number">12</span>~<span class="number">4</span> r<span class="number">4</span> c<span class="number">6</span> d<span class="number">12</span> e<span class="number">6</span> a<span class="number">12</span>~<span class="number">4</span></span><br><span class="line"></span><br><span class="line"><span class="attribute">guitar</span>:</span><br><span class="line">  <span class="attribute">c</span>/e/g<span class="number">6</span> r<span class="number">3</span> r<span class="number">2</span> c/e/g<span class="number">6</span></span><br></pre></td></tr></table></figure>
+<h4 id="一个例子"><a class="header-anchor" href="#一个例子">#</a>一个例子</h4>
+<p>新建乐谱<code>test.alda</code>，内容：</p>
+<figure class="highlight subunit"><table><tr><td class="code"><pre><span class="line">(tempo! 90)</span><br><span class="line">(quant! 95)</span><br><span class="line"></span><br><span class="line">piano:</span><br><span class="line">  o5 g- &gt; g- g-/f &gt; e- d<span class="string">-4</span>. &lt; b<span class="string">-8</span> d<span class="string">-2</span> | c<span class="string">-4</span> e- d- d- &lt;b<span class="string">-1</span>/&gt;g-</span><br><span class="line"></span><br><span class="line">flute:</span><br><span class="line">  r2 g<span class="string">-4</span> a- b<span class="string">-2</span>. &gt; d<span class="string">-32</span>~ e<span class="string">-16</span>.~8 &lt; b<span class="string">-2</span> a- g<span class="string">-1</span></span><br></pre></td></tr></table></figure>
+<p>播放乐谱</p>
+<figure class="highlight cmake"><table><tr><td class="code"><pre><span class="line">alda play --<span class="keyword">file</span> <span class="keyword">test</span>.alda</span><br></pre></td></tr></table></figure>
+<h3 id="Alda-REPL"><a class="header-anchor" href="#Alda-REPL">#</a>Alda REPL</h3>
+<p>alda提供了交互式命令行的服务，通过<code>alda repl</code>进入交互式命令行状态，可以直接敲乐谱的代码播放。</p>
+]]></content>
+      <categories>
+        <category>工具</category>
+      </categories>
+      <tags>
+        <tag>alda</tag>
+        <tag>compose</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>[代码即利剑3]用reveal做ppt</title>
+    <url>/2018/01/18/code-as-sword-3-reveal/</url>
+    <content><![CDATA[<p>本文推荐使用reveal.js做ppt。</p>
+<span id="more"></span>
+<p><a href="https://github.com/hakimel/reveal.js">reveal.js</a>是一款专门用来做ppt的前端框架，支持markdown语法，可以方便地排版以及处理样式和动画，作为一个web服务，在浏览器中打开，同时也支持转成pdf。</p>
+<h3 id="安装-v2"><a class="header-anchor" href="#安装-v2">#</a>安装</h3>
+<p>参考<a href="https://github.com/hakimel/reveal.js#installation">官方文档</a>安装，如果不需要提供外部访问的服务，可以按照 <strong>Basic setup</strong> 指示，下载工程压缩包，解压后直接在浏览器中打开index.html文件即可。</p>
+<h3 id="使用-v2"><a class="header-anchor" href="#使用-v2">#</a>使用</h3>
+<p>修改<code>index.html</code>文件，在<code>&lt;div class=&quot;slides&quot;&gt;&lt;/div&gt;</code>标签里添加<code>&lt;section&gt;&lt;/section&gt;</code>即可增加一页ppt。<br>
+官方提供的<code>demo.html</code>本身是一个很好的文档，可以修改然后打开试试看，点击看<a href="https://revealjs.com">原效果</a></p>
+]]></content>
+      <categories>
+        <category>工具</category>
+      </categories>
+      <tags>
+        <tag>ppt</tag>
+        <tag>reveal</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>创建Superset开发环境</title>
+    <url>/2017/03/27/create-dev-environment-for-superset/</url>
+    <content><![CDATA[<p>本篇文章记录如何创建一个superset的开发环境<br>
+<a href="https://github.com/airbnb/superset">了解superset</a></p>
+<span id="more"></span>
+<h2 id="准备virtualenv"><a class="header-anchor" href="#准备virtualenv">#</a>准备virtualenv</h2>
+<p>创建一个virtualenv, ${superset_env}</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">virtualenv <span class="variable">$&#123;superset_env&#125;</span></span><br></pre></td></tr></table></figure>
+<p>安装依赖, 参考末尾的<a href="#requirements.txt">requirements.txt</a></p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> <span class="variable">$&#123;superset_env&#125;</span></span><br><span class="line">pip install -r requirements.txt</span><br><span class="line">. bin/activate</span><br></pre></td></tr></table></figure>
+<p>cd到代码目录 举例: ${superset_source}</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> <span class="variable">$&#123;superset_source&#125;</span></span><br><span class="line"><span class="built_in">cd</span> superset/static/assets</span><br><span class="line">npm install</span><br><span class="line">npm run prod</span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$&#123;superset_source&#125;</span></span><br><span class="line"><span class="built_in">export</span> PYTHONPATH=.:<span class="variable">$&#123;PYTHONPATH&#125;</span></span><br></pre></td></tr></table></figure>
+<h2 id="跑起来"><a class="header-anchor" href="#跑起来">#</a>跑起来</h2>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> <span class="variable">$&#123;superset_source&#125;</span></span><br><span class="line">superset/bin/superset runserver -p 12306</span><br></pre></td></tr></table></figure>
+<h2 id="新的terminal"><a class="header-anchor" href="#新的terminal">#</a>新的terminal</h2>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> <span class="variable">$&#123;superset_source&#125;</span></span><br><span class="line">. <span class="variable">$&#123;superset_env&#125;</span>/bin/activate</span><br><span class="line"><span class="built_in">export</span> PYTHONPATH=.:<span class="variable">$&#123;PYTHONPATH&#125;</span></span><br><span class="line">superset/bin/superset runserver -p 12306</span><br></pre></td></tr></table></figure>
+<h2 id="requirements-txt"><a class="header-anchor" href="#requirements-txt">#</a>requirements.txt</h2>
+<figure class="highlight apache"><table><tr><td class="code"><pre><span class="line"><span class="attribute">alembic</span>==<span class="number">0</span>.<span class="number">9</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">amqp</span>==<span class="number">1</span>.<span class="number">4</span>.<span class="number">9</span></span><br><span class="line"><span class="attribute">anyjson</span>==<span class="number">0</span>.<span class="number">3</span>.<span class="number">3</span></span><br><span class="line"><span class="attribute">appdirs</span>==<span class="number">1</span>.<span class="number">4</span>.<span class="number">3</span></span><br><span class="line"><span class="attribute">Babel</span>==<span class="number">2</span>.<span class="number">4</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">billiard</span>==<span class="number">3.3.0.23</span></span><br><span class="line"><span class="attribute">boto3</span>==<span class="number">1</span>.<span class="number">4</span>.<span class="number">4</span></span><br><span class="line"><span class="attribute">botocore</span>==<span class="number">1</span>.<span class="number">5</span>.<span class="number">29</span></span><br><span class="line"><span class="attribute">celery</span>==<span class="number">3</span>.<span class="number">1</span>.<span class="number">23</span></span><br><span class="line"><span class="attribute">cffi</span>==<span class="number">1</span>.<span class="number">10</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">click</span>==<span class="number">6</span>.<span class="number">7</span></span><br><span class="line"><span class="attribute">colorama</span>==<span class="number">0</span>.<span class="number">3</span>.<span class="number">7</span></span><br><span class="line"><span class="attribute">cryptography</span>==<span class="number">1</span>.<span class="number">7</span>.<span class="number">2</span></span><br><span class="line"><span class="attribute">docutils</span>==<span class="number">0</span>.<span class="number">13</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">enum34</span>==<span class="number">1</span>.<span class="number">1</span>.<span class="number">6</span></span><br><span class="line"><span class="attribute">Flask</span>==<span class="number">0</span>.<span class="number">12</span></span><br><span class="line"><span class="attribute">Flask</span>-AppBuilder==<span class="number">1</span>.<span class="number">8</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">Flask</span>-Babel==<span class="number">0</span>.<span class="number">11</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">Flask</span>-Cache==<span class="number">0</span>.<span class="number">13</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">Flask</span>-Login==<span class="number">0</span>.<span class="number">2</span>.<span class="number">11</span></span><br><span class="line"><span class="attribute">Flask</span>-Migrate==<span class="number">1</span>.<span class="number">5</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">Flask</span>-OpenID==<span class="number">1</span>.<span class="number">2</span>.<span class="number">5</span></span><br><span class="line"><span class="attribute">Flask</span>-Script==<span class="number">2</span>.<span class="number">0</span>.<span class="number">5</span></span><br><span class="line"><span class="attribute">Flask</span>-SQLAlchemy==<span class="number">2</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">Flask</span>-Testing==<span class="number">0</span>.<span class="number">6</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">Flask</span>-WTF==<span class="number">0</span>.<span class="number">14</span>.<span class="number">2</span></span><br><span class="line"><span class="attribute">future</span>==<span class="number">0</span>.<span class="number">16</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">futures</span>==<span class="number">3</span>.<span class="number">0</span>.<span class="number">5</span></span><br><span class="line"><span class="attribute">gunicorn</span>==<span class="number">19</span>.<span class="number">6</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">humanize</span>==<span class="number">0</span>.<span class="number">5</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">idna</span>==<span class="number">2</span>.<span class="number">5</span></span><br><span class="line"><span class="attribute">ipaddress</span>==<span class="number">1</span>.<span class="number">0</span>.<span class="number">18</span></span><br><span class="line"><span class="attribute">itsdangerous</span>==<span class="number">0</span>.<span class="number">24</span></span><br><span class="line"><span class="attribute">Jinja2</span>==<span class="number">2</span>.<span class="number">9</span>.<span class="number">5</span></span><br><span class="line"><span class="attribute">jmespath</span>==<span class="number">0</span>.<span class="number">9</span>.<span class="number">2</span></span><br><span class="line"><span class="attribute">kombu</span>==<span class="number">3</span>.<span class="number">0</span>.<span class="number">37</span></span><br><span class="line"><span class="attribute">Mako</span>==<span class="number">1</span>.<span class="number">0</span>.<span class="number">6</span></span><br><span class="line"><span class="attribute">Markdown</span>==<span class="number">2</span>.<span class="number">6</span>.<span class="number">8</span></span><br><span class="line"><span class="attribute">MarkupSafe</span>==<span class="number">1</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">numpy</span>==<span class="number">1</span>.<span class="number">12</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">packaging</span>==<span class="number">16</span>.<span class="number">8</span></span><br><span class="line"><span class="attribute">pandas</span>==<span class="number">0</span>.<span class="number">18</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">parsedatetime</span>==<span class="number">2</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">pyasn1</span>==<span class="number">0</span>.<span class="number">2</span>.<span class="number">3</span></span><br><span class="line"><span class="attribute">pycparser</span>==<span class="number">2</span>.<span class="number">17</span></span><br><span class="line"><span class="attribute">pydruid</span>==<span class="number">0</span>.<span class="number">3</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">PyHive</span>==<span class="number">0</span>.<span class="number">2</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">pyparsing</span>==<span class="number">2</span>.<span class="number">2</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">python</span>-dateutil==<span class="number">2</span>.<span class="number">6</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">python</span>-editor==<span class="number">1</span>.<span class="number">0</span>.<span class="number">3</span></span><br><span class="line"><span class="attribute">python</span>-openid==<span class="number">2</span>.<span class="number">2</span>.<span class="number">5</span></span><br><span class="line"><span class="attribute">pytz</span>==<span class="number">2016</span>.<span class="number">10</span></span><br><span class="line"><span class="attribute">requests</span>==<span class="number">2</span>.<span class="number">13</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">s3transfer</span>==<span class="number">0</span>.<span class="number">1</span>.<span class="number">10</span></span><br><span class="line"><span class="attribute">sasl</span>==<span class="number">0</span>.<span class="number">2</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">simplejson</span>==<span class="number">3</span>.<span class="number">10</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">six</span>==<span class="number">1</span>.<span class="number">10</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">SQLAlchemy</span>==<span class="number">1</span>.<span class="number">1</span>.<span class="number">5</span></span><br><span class="line"><span class="attribute">SQLAlchemy</span>-Utils==<span class="number">0</span>.<span class="number">32</span>.<span class="number">12</span></span><br><span class="line"><span class="attribute">sqlparse</span>==<span class="number">0</span>.<span class="number">1</span>.<span class="number">19</span></span><br><span class="line"><span class="attribute">superset</span>==<span class="number">0</span>.<span class="number">17</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">thrift</span>==<span class="number">0</span>.<span class="number">10</span>.<span class="number">0</span></span><br><span class="line"><span class="attribute">thrift</span>-sasl==<span class="number">0</span>.<span class="number">2</span>.<span class="number">1</span></span><br><span class="line"><span class="attribute">Werkzeug</span>==<span class="number">0</span>.<span class="number">11</span>.<span class="number">15</span></span><br><span class="line"><span class="attribute">WTForms</span>==<span class="number">2</span>.<span class="number">1</span></span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>术业</category>
+      </categories>
+      <tags>
+        <tag>python</tag>
+        <tag>superset</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>矛盾</title>
+    <url>/2017/08/20/contradiction/</url>
+    <content><![CDATA[<p>纯粹乃诗人美好的愿望.</p>
+<span id="more"></span>
+<p>以为世间万物皆有矛盾的情感, 因其复杂而成其特点.<br>
+众人皆知道圣人君子该如何,却不知往圣人君子的道路上这些人经历过哪些矛盾,而后人似也较少记录这些细节.</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>stream-of-consciousness</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>敦煌游记</title>
+    <url>/2018/08/30/dunhuang-journey/</url>
+    <content><![CDATA[<p>神圣的敦煌，平凡的世界。</p>
+<span id="more"></span>
+<p>清朝王道士被多个外国盗宝者骗走了无数的宝贝。</p>
+<p>鸣沙山某个山顶，一个红丝巾大姐在山顶接电话，客客套套。山下工作人员一遍又一遍用小喇叭嘶吼，“山上红丝巾游客，赶快原路返回，这里是保护区，禁止攀爬”。红丝巾从容不迫讲完电话，一边往回走，一边“这有什么好保护的呀”。</p>
+<p>下沙山的时候，前面瘦小的女生一直在耐心安抚强壮到被吓尿的男生，“你把脚踩进坑里站稳就好了”。</p>
+<p>沙地摩托车的师傅，和蔼可亲，车技纯熟。一趟走下来，过山车一般刺激。<br>
+“小兄弟，玩的开心不？”<br>
+“开心，很刺激！谢谢师傅！”<br>
+“那给师傅点小费呗！”<br>
+“好呀！”</p>
+<p>没写完</p>
+]]></content>
+      <categories>
+        <category>世界</category>
+      </categories>
+      <tags>
+        <tag>travel</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>写字</title>
+    <url>/2019/10/02/handwriting/</url>
+    <content><![CDATA[<p>终于写完自己的一套字体，完成今年的一个小目标。</p>
+<span id="more"></span>
+<p>练字一直是一个没有直接收益的事情，不适合着急的人，反过来，也可以通过练字培养自己的耐心。</p>
+<p>美学对人的影响是一个漫长的过程，乔布斯提到过设计第一代iMac时，系统字体受到多年前在校旁听的书法课影响。</p>
+<p>古代读书人对书法有一种深入骨髓的追求，这种文化源远流长，流到了我爸身上。<br>
+从进学校念书，我爸就要求我写字好看，然而小学六年我都沉迷自然科学，无心练字，每年寒暑假最担心的就是我爸来检查我的字练好了没。<br>
+初中开始，了解到很多古代的东西，对汉字来了兴趣，开始不停书写。<br>
+所以爱因斯坦说，兴趣是最好的老师。</p>
+<p>练字的过程本质上是两个阶段。<br>
+第一个阶段是模仿，体会什么叫美：模仿朋友们的字，莉萍，炳辉，杨亨，佳馨，倩雯都给我写过练字帖。模仿市场上买的字帖，庞中华，邹慕白。模仿古人的碑文名帖，比如王羲之的兰亭序。<br>
+第二个阶段是表达，创造自己的美。作为一种简单而丰富的载体，练字的过程中总是会书写各种各样的内容。抄写古人经典，唐诗宋词，金刚经。抄流行歌词，旋木，半岛铁盒。写笔记，作业，抒胸臆的文章。</p>
+<p>小时候，长辈们总是说字如其人，越长大越觉有道理。<br>
+有的人写字飘逸，有的人写字拘谨。<br>
+勤奋的时期写字，灵活自如，浑然一体。<br>
+懈怠的时期写字，卡顿生硬，有些畸形。</p>
+<p>以后还是要认真写字，对吧。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>stream-of-consciousness</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>兰州 兰州</title>
+    <url>/2018/08/28/lanzhou-lanzhou/</url>
+    <content><![CDATA[<p>在兰州逗留4天，计划外的计划。</p>
+<span id="more"></span>
+<p>这两天才知道，甘肃是华夏文明的重要发祥地。<br>
+把兰州当做去敦煌中转站的初衷，意外捡到惊喜。</p>
+<p>相比西安，兰州没有帝王经过留下的金碧辉煌，她凝视的，是更多小人物的朴实宁静。</p>
+<p>四年前在泸定种下的旅行理想，在兰州收获。到一个城市，像当地人一样生活，离开的时候，竟然萌生出一丝乡愁。</p>
+<p>去大自然烤肉点一斤羊肉，和同桌的情侣搭话。即便没有安利费，也强烈推荐我点烤土豆片，羊骨头汤。一边解释为什么羊骨头汤好喝，一边聊兰州的交通怎么样。男生催女生赶电影的场，“快走吧，八点四十开始”，临走前两人还不忘跟我告别，“你慢慢吃啊”。</p>
+<p>酒泉路夜市，排着队观看摄影师给白胡子老爷爷拍照。舀牛奶，舀醪糟，打鸡蛋，乘进纸杯，动作缓慢，面带微笑。直到摄影师不断竖起大拇指夸赞，“真棒”。舌尖上的中国真人秀，现场10块，还送一杯鸡蛋牛奶醪糟，超值。</p>
+<p>中元节的傍晚，在街边有个一个小型祭祀台，几个大叔阿姨忙着点蜡烛烧纸钱。先来的阿姨看到后来的大叔挤占位子，大声质问，“我们先来的呀”。</p>
+<p>在兰州大学榆中校区，看到花海心里怒放的我给一起拼车的同学发消息，说这应该是国内大学里自然环境最好的，同学回复，“据说武汉大学的环境是最好的”，紧接着补充，“没去过，我也搞不清楚哪里是最好的”。于是我们约定，将来我去武大看看，再告诉他有没有比这里好。</p>
+<p>何以惹乡愁？<br>
+大概是厚实的银杏叶，大概是又呛又辣的牛肉面，大概是上火拉肚子，大概是在白塔山流着鼻血打战队赛，大概是在兰大花海里打瞌睡，大概是许多熟悉喜爱的交谈，大概是一种毫不掩饰的市井气。</p>
+<p>还有吗？<br>
+有黄河水，无语东流。</p>
+]]></content>
+      <categories>
+        <category>世界</category>
+      </categories>
+      <tags>
+        <tag>travel</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>内自省与对世界的宽容</title>
+    <url>/2017/06/18/introspection-and-tolerant/</url>
+    <content><![CDATA[<p>内自省。</p>
+<span id="more"></span>
+<p>每做完一件事去思考这样做好不好，如何能做的更好。对别人是不是有帮助，是不是会伤害到别人。</p>
+<p>见贤思齐焉，见不贤而内自省也。<br>
+内心剧烈挣扎过，才能理解别人的处境，也更能发现别人之所以那样做的原因。<br>
+常常洞察自己的内心，会发现自己原来有各种各样的情欲，自己会愚蠢，会贪婪。</p>
+<p>内自省而宽容的一个境界是<br>
+塞翁失马，焉知非福。<br>
+小时候以为塞翁是早知道结局会好，后来才明白，原来是不知道结局。因为结局未知，所以还可以抱有希望，尝试争取。也是因为尘埃未定，所以可以宽容。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>think</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>小掌柜</title>
+    <url>/2017/07/21/little-shopkeeper/</url>
+    <content><![CDATA[<p>搭车到理塘的时候，太阳已经斜在西边，风一吹就会落下去。和队友约好了在这里碰头，谢过热心的司机大哥，忘了落在车上的午餐，就一路小跑进了小镇。</p>
+<span id="more"></span>
+<p>路边有个男孩凑过来，小声地问：“住宿吗”，我没反应过来他说的话，只是认真地看着他，红褐色的皮肤，脸上被冻伤的细纹，一双明净透亮的眼睛。我惊奇地问：“什么”，他提高了音量：“你们要住宿吗”，我这才反应过来，“多少钱一个人”，他告诉我们三十块一个人，有热水和电热毯。几乎没有经过商量，我们决定就在男孩家落脚。</p>
+<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86 src="//music.163.com/outchain/player?type=2&id=1141603&auto=1&height=66"></iframe>
+<p>旁边一群小孩正在嬉戏，他叫上其中一个，一起领着我们向他家走。<br>
+“你几岁啦？”<br>
+“12岁。”<br>
+“哇，这么小就帮给家里帮忙啦。”<br>
+他对我们微笑，有点害羞。<br>
+“你爸爸呢？”<br>
+“他出去做买卖了。”<br>
+“你怎么没去读书啊？”<br>
+“我以后留在家里给妈妈帮忙。”<br>
+“啊？不读书了吗？”<br>
+他向我们解释，家里还有一个哥哥和一个姐姐，哥哥和姐姐去其他省读书了，弟弟不久也会被送去寺庙，平常父亲也在外奔波，父母希望他留在家里给母亲帮忙。<br>
+队友感慨地说，“好懂事啊，你就是家里的小掌柜”。<br>
+他又害羞的笑了，宝石一样的眼里泛起雾似的红晕。</p>
+<p>来到他家，他向他母亲交代了我们之后，又出去招揽客人了。他的母亲是个亲切的阿姨，温和地给我们说明水电如何使用，然后就去做饭了。</p>
+<p>和队友集合，安顿好一切，坐在床上翻看一天拍下的图。男孩在旁边好奇地看我，问我在做什么。我把他拉过来给他和他的弟弟拍照，他小声地问，能不能换上新的藏袍来照，我惊喜地催他快去换。</p>
+<p>今晚恰逢藏历新年，男孩的家人邀请我们也穿上男孩哥哥姐姐的新藏袍一起拍照，他们时不时被我们摆的pose逗的哄然大笑，仿佛一家子人在一起过年，热热闹闹持续到很晚。</p>
+<p>第二天清晨我们要继续去搭车，他出来送。<br>
+“你们以后还来吗？”<br>
+“来呀，以后还住你家！”<br>
+“好！”<br>
+“你以后还记得我们吗？”<br>
+“记得！”<br>
+“回去再跟妈妈说一下，回去学校念书，以后再来当小掌柜好不好？”</p>
+<p>小掌柜没说话，还是害羞地对我们微笑。</p>
+<p><img src="/asserts/images/20170721001920.jpg" alt="小掌柜"></p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>memory</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>喜欢独处</title>
+    <url>/2017/06/16/love-being-alone/</url>
+    <content><![CDATA[<p>慎独。</p>
+<span id="more"></span>
+<p>暑假在火车上听歌，思考。<br>
+阅读，幻想。<br>
+骑车上下班，听书听歌，思考。<br>
+行走，跑步，洗澡，吃饭。</p>
+<p>社交是一种技能，需要消耗能量。</p>
+<p>论及自律，因为只能管理自己，所以常常需要独自一人。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>think</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>芒果</title>
+    <url>/2017/05/07/mango-in-childhood/</url>
+    <content><![CDATA[<p><img src="/asserts/images/IMG_20150326_220214.jpg" alt="雨夜"><br>
+立夏，又到了吃芒果的季节。</p>
+<span id="more"></span>
+<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86 src="//music.163.com/outchain/player?type=2&id=209115&auto=1&height=66"></iframe>
+<p>初夏的时候就买回刚上市的芒果，削去皮，果肉鲜黄，偷抹了姑娘的粉。然而好看却不好吃，酸，涩，一只小刺猬。<br>
+等到最近的芒果，质地柔软，不需要工具直接可以剥去金黄的表皮，果肉通透甚至有些蕴蓄的腐朽气息，有失卖相反倒香甜可口。<br>
+像极了交一个朋友。</p>
+<p>十几年前在老房子窗外有几棵芒果树，夏天快到的时候，开始结出鸡蛋大的果实。还没开始熟，老阿姨就教我们用晾衣杆绑上铁圈套个袋子，伸出窗外去把芒果勾回来。晾衣杆在窗台上一进一出，就能采回一个芒果，有时候掉下一两个，还会被楼下刨冰店的老板破口大骂。窃喜和忐忑的一下午，最后的战利品是一大袋几十个青芒果。<br>
+老阿姨教我们把这些芒果包起来，放进衣柜里，压在冬天的厚衣服、棉被中间，放几个星期就能熟。等了一两天，我放学回家发现芒果基本没什么变化，就会问老阿姨，为什么放在被子里捂会熟，老阿姨也说不出个所以然。在当时的年纪，不明情况的等待让我坐立不安，隔几分钟就跑过去翻看，芒果还是青且硬。<br>
+一天晚上我突然灵感大发，问老阿姨，能不能用水煮熟？老阿姨说不行，必须要在被子里捂着。我自以为比别人聪明，就取出几个芒果，在锅里用水煮了好久，结果煮出了一股难闻的怪味，芒果也没有熟，最后只能丢掉。<br>
+后来过了几个星期，在衣柜里老老实实躺着的那些芒果真的是熟了，甜不甜印象不是很深刻，但我们几个确实开心地吃了一顿。<br>
+也许不知其所以然也是一种传递知识的形式，最近常常会有这样的想法。虽然我一直都不买账，但就算老阿姨当年给我讲出了乙烯催熟的道理，我也不会听懂一个字。反而是在高中的时候学到这部分知识，我多次回想起老阿姨教我们把青芒果捂熟的经历，更加印象深刻。</p>
+<p>今天我学会了比老阿姨当年多得多的知识，但依然做不到像她一样从容不惑而知天命，我还是在那些急切想看到的结果之间，坐立不安。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>memory</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>成熟之未来解</title>
+    <url>/2018/08/15/maturity-is-not-surrender/</url>
+    <content><![CDATA[<p>成熟不是要你献上膝盖，而是要你挺直腰板。</p>
+<span id="more"></span>
+<p>过去说成熟，总是会谈到圆通、中庸这些高大上的概念，这次说点具体的。</p>
+<p>首先，一个人变成熟为的什么？<br>
+有时候是为了让大家皆欢喜，有时是为了给自己留余地。一个成熟之人的日常表现，往往有一些套路。比如不承诺做不到的事，不轻易得罪人，给自己留退路，甚至是鬼谷子的谋于阴而成于阳，其实都是求未来者如期，不后悔，或者后悔的时候有所减轻。<br>
+取其中要素，就是今天做的事不让明天后悔。<br>
+这就很有意思了，圆滑世故好像是成熟？非也，圆滑世故的你将来面对真实的你，会后悔的吧？</p>
+<p>其次，如何做才称得上成熟？<br>
+既然成熟是为了让今天的自己做事不使明天的自己后悔，那么应该有两种方式可以做到：</p>
+<ol>
+<li>提高做事情的靠谱程度</li>
+<li>降低犯后悔情绪的容易程度</li>
+</ol>
+<p>换言之，你可以让今天的自己多做好事，别那么冲动；也可以让明天的自己心态放开一点，别那么容易后悔。</p>
+<p>从身边的无数案例你会发现，大家已经在当下付出了很多努力，谨小慎微，坚决不给未来的自己留坑，紧张兮兮，结果还是一堆坑。<br>
+从另一个角度实践的人很少但其实效果最明显：别那么容易后悔，做一件事情之前，先把所有最糟糕的情况考虑到，做好准备，放开手脚认真去做就好。挺直腰板，不跪不躺。</p>
+<p>简而言之，成熟的一个解，叫做心态好。失败了也不后悔，失败也是一种成功。</p>
+<p>多年前来自一个学长的话：</p>
+<blockquote>
+<p>但行好事，莫问前程。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>stream-of-consciousness</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>叶子</title>
+    <url>/2017/05/06/music-yezi-asang/</url>
+    <content><![CDATA[<p>孤单，是一个人的狂欢；狂欢，是一群人的孤单。</p>
+<span id="more"></span>
+<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86 src="//music.163.com/outchain/player?type=2&id=5234493&auto=1&height=66"></iframe>
+<p>第一个音开始，钢琴敲下悲伤的基调。</p>
+<p>叶子，是不会飞翔的翅膀； 翅膀，是落在天上的叶子。</p>
+<p>因为这首歌，知道了那个代表着沧桑的名字，学会在三四分钟里像看电影一样读一首歌，无语凝噎。</p>
+<p>此去经年，应是良辰好景虚设。便纵有千种风情，更与何人说？</p>
+]]></content>
+      <categories>
+        <category>品诣</category>
+      </categories>
+      <tags>
+        <tag>music</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>梦旅人</title>
+    <url>/2018/11/07/picnic/</url>
+    <content><![CDATA[<p><img src="/asserts/images/picnic.jpg" alt="Picnic"><br>
+儿时有那么一段时间，「离家出走」真是家常便饭。</p>
+<span id="more"></span>
+<p>每次在家里遭遇不平等的事情，就会激起出走的冲动。一个人是万不敢走远的，每次一定跟着阳阳，有时候珊珊也来，再有时候会拐走佳彬和萍萍，大家一起流浪，像是在郊游。</p>
+<p>出门的第一站总是河滨公园，因为吃了早餐有力气没处使，还有心思玩。有一次珊珊跟我们一起出走，先去河滨公园玩了半天，他们俩不知道从哪里捡来一只小乳猫，在公园给它洗澡。偶遇一个陌生年轻男子，聊起那只猫，还说要带我们去掏鸟窝，结果走进河边的树林，鸟窝没见到，被几只大狼狗追赶着跑出来。陌生男子还向我们炫耀他钱包里的美元钞票，得意地说要收购阳阳她们的小猫，约定晚上在体育馆旁边的游乐场交易。那天晚上，陌生男子根本没来，阳阳她们怕小猫饿死，把她送给了一个商店的主人。</p>
+<p>玩到中午肚子饿了，终于意识到自己不愿意饿死在外面，开始盘算要去哪里。阳阳去东田四姨家和安溪素兰家住过，貌似对周边的认识最清楚，虽然这些目的地她也只是知道方向而已，却总是在这个时候，充满自信地提出要带我去素兰或者四姨家。当然结局总是相同，两个小学生，几十公里的路，边走边玩，被好奇心拉扯着东张西望，走到傍晚，都还没完成一半。周围一片荒野农舍，鸡鸣狗吠，吓得阳阳终于缴械，带着我赶紧转头疾跑回程，通常在天黑以后不久，结束这一次的趴趴走。</p>
+<p>到现在都深刻记得小学二年级或者三年级，第一次出走的片段。那一次半路上我们看到一个裸露上半身的中年女性，长头发脏乱结块，披在褐色的身上，一只手上握着半截甘蔗，喃喃自语，与我们迎面走来，步履踉跄。我被这一幕吓到，指着她给阳阳看，没有意识到对人有失尊重。正当我惊讶于她为什么会这样时，中年女性挥动着半截甘蔗向我打来，还好我够矮才躲开。我们一边拼命逃跑一边回头看，她已经不理我们，继续喃喃向前走了。</p>
+<p>出走时吃饭真的是一件艰难的事情，当时手上没有零花钱，一天里唯一的食物，总是依靠阳阳不知道从哪弄到的几毛钱一块钱买辣豆皮充饥。有一次出走回到镇上已经很晚，我们俩一人提着一个塑料袋，在河滨公园跟着几个老太太和小屁孩一起拾荒，找各种角落里的易拉罐饮料瓶，准备大干一场以后，去废品收购点卖个好价钱，饱餐一顿。可惜天公不作美，正沉浸在幻想中努力打拼呢，被一个亲戚发现，把我们捡到的瓶瓶罐罐全扔进了垃圾桶，还强行带我们回家。</p>
+<p>最坚挺的一次我们和珊珊一起，流浪到晚上八九点钟，跑到德克士玩，遇到了佳彬和萍萍，跟他们说我们正在离家出走。印象中这两个孩子当时并没有什么不满情绪，可能是出于好奇想玩到天亮，又或者只是纯粹想跟我们在一起，居然也加入了我们。德克士关门后我们又去了体育馆，到底玩了啥我已经记不清楚。只记得凌晨四五点的时候，突然看到一小队武警来操练，一二三四，士气高昂的口号，齐步走，跑步。这情节，对我们来说都是那天晚上的小惊喜，冻得半死，原来天注定要我们来这这阅兵啊。</p>
+<p>那一次天快亮的时候，佳彬和萍萍的爸爸开着摩托找到体育馆。我们躲在几块废弃的铁板后面，路灯把我们的影子打在路上暴露了藏身之处。佳彬和萍萍在几次催促中，难敌睡意走出去上了摩托，阳阳，珊珊和我坚持着不出去，他们就自己回家了。很快，听闻我们在体育馆，素兰也过来把我们带回家，一路生气地训斥我们这么不懂事。</p>
+<p>回到家，一顿骂一顿罚，折腾到深夜或者凌晨终于可以去睡觉，一天才算结束。</p>
+<p>折腾的多了，爸妈也受不了，我和珊珊三年级被转学昆明，安排在他们身边。从那以后，我们就没有再做过这样的事情。</p>
+<p>许多次的「离家出走」，给我留下了什么？也许是学会尊重陌生人，也许是初识世界之大，也许是对自由的无限渴望，也许是开始编织往后的一个又一个白日梦。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>memory</tag>
+        <tag>岩井俊二</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>概率论经典问题-球放桶里</title>
+    <url>/2017/05/02/probability-theory-classic-problem-balls-into-bins/</url>
+    <content><![CDATA[<p>Google论文<a href="http://research.google.com/pubs/pub45756.html">Consistent Hashing with Bounded Loads</a>的背景知识。</p>
+<span id="more"></span>
+<p>最近看到Google一篇论文<a href="http://research.google.com/pubs/pub45756.html">Consistent Hashing with Bounded Loads</a>，提出一种新的算法，使得在动态负载均衡的场景中，增删节点的时候流量切换更加平缓。</p>
+<p>可以通过参考wiki百科<a href="https://en.wikipedia.org/wiki/Balls_into_bins">Balls into bins</a>，了解其背后的原理。</p>
+<p>在计算机科学中，常常会有资源分配的问题，其中一个典型的例子是分布式服务的负载均衡：可以简单地理解为有n个桶(服务器)，需要装下m个球(客户端)。为了能让客户端尽可能随机分布在各个服务器，以保证服务器资源的平衡，比较常见的做法是通过计算给每个客户端生成一个一致性hash值，映射到服务器。实际上对大多数服务而言，m是一个无穷的值，因为客户端的请求总是源源不断地涌来。但当服务器稳定运行时，单位时间服务器需要处理的请求可以认为是近似固定的。</p>
+<p>首先提出一种最均衡的方式，那就是每个球在投放之前，先判断每个桶当前的装球量，然后选取负载最低的桶，但实际应用中因为查询已占用资源的也有明显的开销，所以通常并不会这样做。</p>
+<p>考虑一种特殊情况：m=n，比较容易理解，如果在这种情况下能够达到负载均衡，那么在m&gt;n的情况下，理论上也总是能够分配均衡。<br>
+进一步，当m=n的时候，如果随机把n个球放进n个桶里，那么一定会有一个或多个桶分配的球比其他的桶多，导致分布并不像想象中那么均匀，因为每个球都有1/n的概率被丢到这个桶里。<br>
+一种优化的方案是，每个球先随机选取2个桶，然后判断这两个桶当前的装球量，最后选择负载的桶来投放。按照<a href="https://link.springer.com/chapter/10.1007%2F3-540-49543-6_13">计算结果</a>，已经能极大程度地满足负载均衡和快速选取资源的需要。</p>
+]]></content>
+      <categories>
+        <category>术业</category>
+      </categories>
+      <tags>
+        <tag>probability-theory</tag>
+        <tag>algorithm</tag>
+        <tag>load-balancing</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>扫地</title>
+    <url>/2019/02/10/sweep-the-floor/</url>
+    <content><![CDATA[<p>扫地当然只是个减熵的问题。</p>
+<span id="more"></span>
+<p>今天在扫地的时候，第一次回忆起自己第一次被教扫地的情景。</p>
+<p>那是在1997年，还在上学前班的时候，因为上课太喜欢和同学说话，被留堂打扫。老师先示范了一遍，往水泥地上洒水，然后用扫帚扫几下，把垃圾聚到一起，最后扫到簸箕里。示范结束后，老师把扫帚交给我，我扫着扫着，就来到了2019年。</p>
+<p>扫地真是个重复劳动啊，二十多年我都在想，扫了还会有人来踩，不如不扫。但其实，大地是你永远也扫不干净的，扫地真正的意义在于维护你的生活秩序，因为你在不停地消耗能量，生活越来越混乱，以至于混乱到使你濒临崩溃。有一天你想跟这个混乱决斗，你说不是你死，就是你死，所以你每隔一段时间就会打扫一次。</p>
+<p>我们一次又一次踩同一个坑，犯同一个错，每一次不都是收拾一下，就原谅自己了吗。</p>
+<p>高中的时候有一期《格言》提到过一个辩题：一屋不扫，何以扫天下？辩论双方，一方人说，心中有江山的人不限于一室之内，另一方说，连一屋你都搞不定，你怎么搞天下。<br>
+从今天的世界来看，以一己之力做成某件事情难于上天，更多的时候，是大家一人做一部分，合力完成复杂的工程。回来说扫天下，一个人的精力扫一屋是差不多的，有影响力的人扫掉关键的一屋，其他人帮忙扫其他的屋。<br>
+如何做到这一点？佛说是愿力。以前各种说佛无所不能，头上发光，搞得很像封建迷信，其实他想表达的无非是一点，当你的愿力足够强大，你可以完成不可思议的事情。过去还有同学引用过一句话，你真的想做某一件事的时候，全世界都会为你让路，说的就是这个愿力。<br>
+什么是愿力？佛教解释是，心愿的造业力。就是当你有发自内心的一个愿望，为了实现这个愿望，你能够激发你自己在将来几个月、几年甚至一辈子对自己和身边的环境造成影响。它更像是物理讲的一个场，有了这个场，就会自然而然形成势，而这个势，就是佛教讲的业力。当下你和周围的环境所有变化的趋向，短期内会产生的影响，都是业力。</p>
+<p>最强大的愿发自少年，它使你能够抵抗诱惑，专注学习，刻苦训练。它甚至让你有能力改变周围的人和环境，改变世界。</p>
+<p>少年，抬头发愿，低头扫地吧。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>stream-of-consciousness</tag>
+        <tag>佛</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>火车</title>
+    <url>/2019/08/08/train/</url>
+    <content><![CDATA[<p>长途火车，是这个年代即将逝去的美好空间。</p>
+<span id="more"></span>
+<p>不得不感叹国家和个体的高速发展。很多年没坐过几十个小时的火车了，现在的旅程总是飞机高铁，匆匆忙忙。</p>
+<p>火车给人一种强烈的节奏感，稳定的，持续的，行进中，就像吉他熟悉的随意的T1T2T1T2，往复循环。<br>
+当你不知道如何度量时间的流逝，想想这种感觉，窗外的风景一帧帧滑过，铁轨在无限延伸中从平行到交错再到平行，金属碰撞摩擦的咔嚓声，伴随着同样的节拍发生，一个超长的电影镜头。</p>
+<p>如果旅行的目的是感受不同的人生，可以在长途火车得到极致的实现，狭小的空间里，几个陌生人不得不一起吃喝睡，交换座位，有时还会掏心交谈。<br>
+这些人里，有外出务工的青年男女，皮肤黝黑，散发着汗臭味，坦诚粗旷，从不缺少微笑。<br>
+有常年留守在家念书的孩子，即将与许久不见的父母相聚，兴奋地奔跑吵闹。<br>
+有年轻的男女朋友，安安静静，仿佛置身在只有他们两个人的世界。<br>
+有法国来华师大交换的外国学生，穿着人字拖走过云贵川，用刚过四级的普通话和周围的人交谈。<br>
+除此之外，还有检票换票的列车乘务员，推着餐车卖盒饭零食饮料的移动售货员，每一个中途到站站台上卖东西的小贩，贵阳的叫化鸡十块钱一只，上饶的鸡腿五块钱两个，都在向你展示这个广袤大地上不同的风土。<br>
+大二的暑假，在火车上认识了曾经驻扎中缅边境的武警战士。那天下午刚上车的时候，我提出想和他交换窗边的座位，被他言语粗暴地拒绝，晚餐期间他一个人喝了一瓶二锅头，开始为下午的事情和我道歉，解释说是因为上车前被人偷走身上仅有的两万块钱，懊恼不知道怎么和妻子交代。后来的时间里，他又给我讲述在部队期间的经历，关于缅甸的人和文化，金三角的危险交易，而我就像读了一本名字叫某某历险记的小说，窥见一段不属于我的生活。</p>
+<p>在火车车厢有限的空间里独处，阅读，思考，听音乐，回忆远方的人和往事。<br>
+曾经单曲循环范范范玮琪的你是答案，心中牵挂一个叫做鸡蛋的挚友。那时候的友情啊，很认真，用少不经事的言语和文字，强烈而含蓄地表达，某一种不可失去。<br>
+读过平凡的世界，而后相继读了很多乡土文学，每一个故事都是地方特色明显，个体命运在群体命运中跌宕，从那时开始，对这个国家的每一片土地，每一种文化，产生了向往和热爱，对这个世界每一个不一样的人，有理解和关怀。我们都生活在这个平凡的世界，努力让生命不平凡。<br>
+读过蒙田随笔，了解另一个世界的另一种哲学，认识到更多人类思考的先驱，学会通过辩论思考和解决问题。</p>
+<p>大四的三月，在通往成都的火车上，看着窗外的山河倒转切换，不眠的深夜和陌生人交谈。有一种强烈的预感，即将发生的西藏之行，未知中生长出奇妙。忐忑和期待，大概是我旅行的意义吧。</p>
+<p>火车于一些人来说，也许是一段特殊的旅程，在每次出发和到达之间，短暂体验轨迹外的生活。<br>
+须知世间参差多态，乃是幸福的本源。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>memory</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>在react-native中使用es7的decorator</title>
+    <url>/2017/04/15/work-with-es7-decorator-in-react-nwqative/</url>
+    <content><![CDATA[<p>本篇文章记录如何在react-native中使用es7的decorator提案<br>
+<a href="https://github.com/wycats/javascript-decorators">了解decorator</a><br>
+或者看<a href="http://es6.ruanyifeng.com/#docs/decorator">阮一峰的ECMAScript 6 入门</a></p>
+<span id="more"></span>
+<h1>配置babel</h1>
+<h2 id="安装依赖"><a class="header-anchor" href="#安装依赖">#</a>安装依赖</h2>
+<p>在react-native项目里安装 <strong>babel-plugin-transform-decorators-legacy</strong> 和 <strong>babel-preset-react-native</strong> 这两个库:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install --save-dev babel-plugin-transform-decorators-legacy</span><br><span class="line">npm install --save-dev babel-preset-react-native</span><br></pre></td></tr></table></figure>
+<h2 id="babelrc"><a class="header-anchor" href="#babelrc">#</a>.babelrc</h2>
+<p>在项目根目录(<em>package.json所在的目录</em>)添加 <em>.babelrc</em> 文件:</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;presets&quot;</span>: [</span><br><span class="line">    <span class="string">&quot;react-native&quot;</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="string">&quot;plugins&quot;</span>: [</span><br><span class="line">    <span class="string">&quot;transform-decorators-legacy&quot;</span></span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中<code>&quot;presets&quot;: [&quot;react-native&quot;]</code>是为了让babel首先兼容react-native的其他配置,参考<a href="https://github.com/facebook/react-native/tree/master/babel-preset">babel-preset-react-native</a></p>
+<h1>应用</h1>
+<h2 id="autobind"><a class="header-anchor" href="#autobind">#</a>autobind</h2>
+<p>举例使用 <em>autobind-decorator</em> 这个库, 其作用是在声明方法时自动bind(this):<br>
+安装</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install --save autobind-decorator</span><br></pre></td></tr></table></figure>
+<p>为类方法添加装饰器</p>
+<figure class="highlight jsx"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> React <span class="keyword">from</span> <span class="string">&#x27;react&#x27;</span>;</span><br><span class="line"><span class="keyword">import</span> ReactNative <span class="keyword">from</span> <span class="string">&#x27;react-native&#x27;</span>;</span><br><span class="line"><span class="keyword">const</span> &#123;</span><br><span class="line">    TouchableNativeFeedback,</span><br><span class="line">    View,</span><br><span class="line">    Text,</span><br><span class="line">&#125; = ReactNative;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> autobind <span class="keyword">from</span> <span class="string">&#x27;autobind-decorator&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span> <span class="keyword">extends</span> <span class="title">React</span>.<span class="title">Component</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="title">constructor</span>(<span class="params"></span>)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>();</span><br><span class="line">        <span class="built_in">this</span>.state = &#123;</span><br><span class="line">            <span class="attr">count</span>: <span class="number">0</span>,</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @autobind</span><br><span class="line">    <span class="function"><span class="title">handlePress</span>(<span class="params"></span>)</span> &#123;</span><br><span class="line">        <span class="comment">//此方法会被自动bind(this)</span></span><br><span class="line">        <span class="built_in">this</span>.setState(&#123;</span><br><span class="line">            <span class="attr">count</span>: <span class="built_in">this</span>.state.count + <span class="number">1</span>,</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="title">render</span>(<span class="params"></span>)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> (</span><br><span class="line">            <span class="xml"><span class="tag">&lt;<span class="name">View</span> <span class="attr">style</span>=<span class="string">&#123;&#123;flex:</span> <span class="attr">1</span>&#125;&#125;&gt;</span></span></span><br><span class="line"><span class="xml">                <span class="tag">&lt;<span class="name">TouchableNativeFeedback</span> <span class="attr">onPress</span>=<span class="string">&#123;this.handlePress&#125;</span>&gt;</span></span></span><br><span class="line"><span class="xml">                    <span class="tag">&lt;<span class="name">View</span>&gt;</span></span></span><br><span class="line"><span class="xml">                        <span class="tag">&lt;<span class="name">Text</span>&gt;</span>&#123;this.state.count&#125;<span class="tag">&lt;/<span class="name">Text</span>&gt;</span></span></span><br><span class="line"><span class="xml">                    <span class="tag">&lt;/<span class="name">View</span>&gt;</span></span></span><br><span class="line"><span class="xml">                <span class="tag">&lt;/<span class="name">TouchableNativeFeedback</span>&gt;</span></span></span><br><span class="line"><span class="xml">            <span class="tag">&lt;/<span class="name">View</span>&gt;</span></span></span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="更多使用decorator的例子"><a class="header-anchor" href="#更多使用decorator的例子">#</a>更多使用decorator的例子</h2>
+<ul>
+<li>为组件实现scu, 参考<a href="https://github.com/felixgirault/pure-render-decorator">pure-render-decorator</a></li>
+<li>打印生命周期方法的调用log</li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">@lifecycleLog</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span> <span class="keyword">extends</span> <span class="title">React</span>.<span class="title">Component</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1>推广</h1>
+<p>同理可得任意需要扩展babel plugin的配置方法</p>
+]]></content>
+      <categories>
+        <category>术业</category>
+      </categories>
+      <tags>
+        <tag>es7</tag>
+        <tag>decorator</tag>
+        <tag>react-native</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>年[26]</title>
+    <url>/2017/06/11/year-26/</url>
+    <content><![CDATA[<p>关于年份的意识从2001年转学昆明的时候开始产生，一直到今天。</p>
+<span id="more"></span>
+<p>人对于年这个维度的清晰感受，常常需要依赖于重大历史事件和同样重大的个人经历结合，没有这些东西，就好像一年不存在，只是数字增加罢了。<br>
+比如我对2008年最深的印象是，北京奥运会的第一天，竞赛班一群同学去飞鹏老师家通宵观看开幕式。</p>
+<p>曾经以为星座需要看农历生日，觉得金牛座的描述很像自己，稳重保守。十几年过去才发现自己是个纯正的，太阳星座和上升星座都是双子座的人。<br>
+这种纯正体现在别人所见和自己内心的契合，骄傲放纵，喜新厌旧，毫无悬念。</p>
+<p>所有人都有与生俱来的缺点，自我教育能够帮助自己接受或者改善这些缺点，而有时候更加快速见效地方式是伪装接受这些缺点或者伪装它们的反面。</p>
+<p>大学的时候发现自己一个缺点，那就是高中期间洋洋得瑟的各种才华，其实都足以贻笑大方之家。<br>
+对所有的新事物感兴趣，并没有让我在某一个领域得到高深的造诣。最大的矛盾在于，不但个人英雄主义想以一己之力改变世界，又想要尽情享用千百种生活方式。最后说服我自己的理由是，只要放纵去尝试和体验，足够多之后自己会在经历的广度上成为一个英雄。<br>
+算是为了假装接受自己的缺陷所引入的美丽托辞吧。</p>
+<p>有很多年处于一种感知不到时间的状态，感受到的仅仅是自己在进步，不管是物质的肉体，还是哲学的精神，都在高速上升。现在看来，这种状态不过是生物个体正常的生命周期节点，并不会无限持续下去。然而自己和很多人一样，因为没有认识到这个道理，瘾于无时间属性的状态，消耗健康，消耗时间，浪费所有宝贵的东西而不自知，即便事实摆在眼前也能做到视而不见。<br>
+仅存几次让人觉得恐慌的，就是与自己交流的人，早已不是少年，或多或少都抱着各种成熟世俗的烦恼。<br>
+平静下来仔细想想对我又有什么影响，其实也没有，毕竟自己不仅仅愚蠢固执，还常常巧言令色说服自己和他人。</p>
+<p>为什么要在这个时候写这些废话。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>stream-of-consciousness</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>年[27]</title>
+    <url>/2018/08/13/year-27/</url>
+    <content><![CDATA[<p><img src="/asserts/images/201808131354.jpeg" alt="天花板的灯"><br>
+三年一站，仿佛已经成为人生路途的一个隐形规则。</p>
+<span id="more"></span>
+<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86 src="//music.163.com/outchain/player?type=2&id=26090155&auto=1&height=66"></iframe>
+<p>小学三四年级转学昆明又回老家，小升初，初升高，大学。<br>
+日益变化的行业，在同一个厂搬砖三年，身边的工友基本换了个遍。<br>
+除去少数偶发事件，我已经习惯了三年一次的迁徙。在这样的变化中，心智逐渐成熟，越来越明确自己喜欢什么，不喜欢什么，什么是心花怒放，什么是后会无期。</p>
+<p>其实人内心深处常常是渴望能永远停留的，比如停在高中的某段时间，比如跟某人天天在一起，比如在一家很喜欢的公司里干一辈子。可惜世界是流动的，不由人的，对吗？</p>
+<p>从某些意义上讲，我最重视的关系还是朋友，因为朋友真诚，朋友无用，朋友为自己所选择，朋友不需要负担，朋友跨越时间空间，永远都在。<br>
+最希望身边所有的人，所有的关系，都可以转换成朋友。<br>
+比如说上司的器重，对我来说这件事值得高兴，也值得不高兴。<br>
+先说说器，在我们的文化里，器是一个复杂的概念。狭义上讲，器是一种工具，延伸一点是才能，广义上讲，器是一种形式。<br>
+说上司器重为何使你高兴，因为你的才能得到认可。为何使你不高兴，因为对他来说，你只是个器。这就导致他再欣赏你，也只是考虑怎么把你用好，而极少真诚地把你当朋友，其实他更多的还是为他自己。这点很让人难过，因为你再推广出去，周围的同事，你把他们当朋友，他们会不会只是把你当做一个器？再看你身边的亲人，你对他们来说也只是个器吗？陌生人，我把微信账号给你，你用来骗钱，你是不是也把我当做一个器？<br>
+告诉我，想到这些你会不会难过。<br>
+我明白这是世界的规则，没关系，你有你的规则，我有我的理想。</p>
+<p>你还记得古人说玉不琢，不成器。但你记不记得孔子说，君子不器。人在追求成器的同时，能否做到对待自己，对待朋友，可以不器。我也许做的不好，但我不会停止努力。</p>
+<p>也许是人到了这么个状态，最近经常考虑如何去为别人负责的问题。如果成为一个丈夫或者父亲，要如何经营才能和睦幸福；如果带领一个团队，要如何对上不辱使命，对下保证健康成长；如果自己做一个产品，要如何对社会有益，好好发育。<br>
+面对如此复杂的问题，总是觉得有一天时候到了，答案自然会摆在眼前。事实是自己的答案还没到，周围的人已经在催了，大家希望你在实践中学习和成长。真的考虑起来，他们总是为你好的。<br>
+然而有些事啊，你一旦前进了就会进入一种两难境地，别无选择。<br>
+比如结婚生子这个事，怎么在实践中学习？最怕的是为了家庭和睦，委屈了自己，为了保全自己的内心，委屈了家人。所谓的家和万事兴，必然有人牺牲自己。如果我就是不妥协呢？我的反骨不会同意。<br>
+所以我还是希望等那么一天，时候到了，对一切都满意，不需要内心妥协，是不是命都认。</p>
+<p>也许就是在这样的自问自答中找到答案呢？</p>
+<p>我想人这一生经历过的所有事情，无论勇敢还是懦弱，成熟还是幼稚，耀眼还是黯淡，最后都一定会有影响，深浅不一。<br>
+就像每一次将要迎接新的环境，我都会想起初中读《沙漏》里的一句话：</p>
+<blockquote>
+<p>那一天，你理着傻傻的平头，对着吉凶未卜的高中生活，露出了自信无敌的笑容。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>stream-of-consciousness</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>年[28]</title>
+    <url>/2019/07/12/year-28/</url>
+    <content><![CDATA[<p><img src="/asserts/images/magnum.jpeg" alt="旋风冲锋"><br>
+一直都认为旋风冲锋是世界上最酷的车。</p>
+<span id="more"></span>
+<p>当年小豪的车子胜利冲锋，在赛场上被魔鬼司令粉碎。失去了爱车的豪，垂头丧气，魂飞魄散。朋友J偷偷拿出未发布的四驱车模拟程序，让小豪自己修改参数，模拟驾驶。人车合一的豪，不断降低底盘，减轻车身，加大马力，设计出了集速度和帅气于一身的四驱车模型。虽然最后有人往模拟程序里投放病毒导致数据丢失，但小豪还是凭记忆力画出了车的样子。这辆车，就是后来的旋风冲锋。</p>
+<p>冲啊，旋风冲锋！这句话在当时使你多么热血沸腾，大概是某种发自内心的喜悦吧。</p>
+<p>买了好多从前喜欢的四驱车，但发现再念起这句台词，未能重拾当年那种感觉。</p>
+<p>前几天看到一个大二的孩子，手写API上传视频，第一次成功发布后刷新看到自己的视频，抑制不住笑了出来，羡慕。</p>
+<p>今年一直在思考的问题是如何保有持续的少年感。</p>
+<p>对比现在和少年的自己，发现一个很大的区别，少年拥有的物质相当简单，少年梦寐以求的很多事物，今天已经唾手可得。</p>
+<p>少年的状态，可能就是穷？<br>
+但是仔细想，少年的你，拥有时间，精力，所向披靡的勇气，和人生旅途的无限可能。</p>
+<p>把人想成一台机器，你会发现时间的流动对人的影响有个特别的现象，因为知识和经验的积累，这台机器上运行的算法越来越复杂，然而同时又因为人自然的生长周期，这台机器的性能变得越来越差。</p>
+<p>随着对时间的认识越来越清晰，你不停告诉自己，要把大部分时间花在少数重要的事情上。但每次问重要的事情是什么，你总能说出无数个不得不保留的选项。因为有太多不得不，时间被挤占，自由被吞噬。</p>
+<p>可怕的是我们拥有太多东西，不想失去已经得到的，还想要获取更多。</p>
+<p>拥有越多越不自由，一定要主动脱离物质的枷锁。</p>
+<p>已经拥有的，需要在适当的时候失去。<br>
+想想看，如果胜利冲锋没有被粉碎，旋风冲锋的出场怎么会像凤凰涅槃一样热血？<br>
+从这个角度看，挥霍有时是件好事。</p>
+<p>还没获得的，需要放弃一些欲念。<br>
+欲有两类，一类源于肉身，一类源于精神。<br>
+来自肉身的欲一阵一阵的，来去都很快，有的时候很强烈，完成了以后有种无趣和空虚，甚至有时候还会有种“以后再也不要”的恶心。<br>
+来自精神的欲更像是愿，缓缓流淌，不会突然变强或变弱，持续周期很长，完成了以后会有自我认同感，想要实现更多。<br>
+肉身的欲望容易得到满足，精神的欲求难以实现，大部分人的大部分时间，都花在了肉欲上。明知道结果是无尽的空虚，也选择浑浑噩噩。<br>
+我们需要做的，就是努力克服肉欲，追逐更美好的愿望。</p>
+<p>没有欲望行不行？<br>
+其实你的欲望只是你内心所求的映照，如果你没有追求，那你是谁？你活着有什么意义？<br>
+反过来你有一些比较难实现的欲望并不是坏事，要知道一个人想要保持向上的状态，奥秘在于精神变化的速度必须超过肉体变化的速度，正是这种求而不得的受力不平衡产生了成长的加速度。</p>
+<p>拥有的少一点，简单的表达就很好。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>stream-of-consciousness</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>年[29]</title>
+    <url>/2020/07/24/year-29/</url>
+    <content><![CDATA[<p><img src="/asserts/images/capharnaum.jpeg" alt="迦百农"></p>
+<p>先贤莎士比亚说</p>
+<blockquote>
+<p>To be or not to be, that’s a question.</p>
+</blockquote>
+<span id="more"></span>
+<p>最近连着有好多人问起人生计划，关于买房结婚生子等等的考虑。</p>
+<p>人这一辈子要做的选择实在太多，为了避免人云亦云，总是会掏出十万个为什么来折磨自己。是不是真的想要这个？为什么要这个？能否承担后果？</p>
+<p>既然它会消耗生命大量时间，能找到一种简单的决策方式很重要。<br>
+如何在正确的时机做出正确的选择？</p>
+<p>以是否要生孩子为例，多年以来我都困于一个问题，为什么有那么多人，自己都活的不明不白，根本无法承担养育一个孩子的责任，还要生孩子，把一条生命带入苦难？电影「迦百农」中，黎巴嫩男孩扎因把自己的父母告上法庭，因为父母生下了他，却让他过着悲惨的生活。<br>
+从另一个角度，身边的很多人并没有在想清楚、准备好的情况下才要了孩子，但是他们依然成为了很好的父母。我发现在这个过程中，他们的心态和做事情的方式都发生了很大的变化，会开始觉得人生有了寄托，开始为了另一个生命不求回报的付出。记得看到晓婷在朋友圈说的，她感激自己的孩子，是孩子让她成为了更完整更好的人。</p>
+<p>还有个例子是我自己，与杨福饱至今4年有余，逐渐进入共生的状态。过程中经历了各种各样的问题，无数次激烈的冲突和漫长的失眠，随之而来的表达、和解。共同的理念也很简单，认真对待出现的问题，修掉它就是了。</p>
+<p>很多事情都是这样，你可能永远也想不清楚，自己到底准备好了没有、该不该做这个决定，甚至有很多情况下选择是被动的、意外发生的，但你的选择一定会对未来产生或好或坏的影响。幸运的是，大部分情况下，无论你做了什么决定，都会有努力使事情变好的机会。</p>
+<p>当代哲人乔静浩曾经在几次食堂排队用餐的时候，说了一句很有道理的话：选择比努力更重要。<br>
+很多前辈也会告诉你同样的话，比如父母会告诉你职业要选稳定的铁饭碗，对象要找家庭条件好的，因为可以“少奋斗20年”。<br>
+有一些事情是这样，短期内看似有很大影响，比如一场考试或比赛，工作的一个阶段，20年后你的生活状态，但又怎样，这些状态不可改变了吗？<br>
+把时间拉长仔细想想，你人生的众多意义，是一份稳定的工作，是某一刻的生活状态，还是整个生命的过程？</p>
+<p>想到一些重要的事情，比如养成一个爱好，交一个朋友，组建一个家庭，发起一个事业，这些事情永远不会有结果，因为时间永远不会静止，而人生很像一个Looping的程序，不停地运行下去才有意义。<br>
+想到和刘旸讨论的瞎话模板：组一个乐队，重要的不是音乐，是与之相关的其他东西。</p>
+<p>这么说的话，似乎某个短期的事件并没有那么重要，推广出去，某个时刻的选择也许也没有那么重要，你怎么完成选择后续的动作才重要。<br>
+或许也可以这么理解，单一的某个选择并不决定你的人生终点，每一个选择后面都会跟着千千万万个选择，所有这些选择的总和才决定你人生的终点。<br>
+更进一步，终点是死亡，是灰飞烟灭，生命的终点就是没有生命。<br>
+因此生命没有终点，永远都在过程中。<br>
+终点不重要，过程才重要。</p>
+<p>还有一个道理是去年偶然得到的：将来已矣，未来可期。<br>
+想想看，所有已经计划好的，大势所趋的，一定会在某个时间发生的事情，他没发生，跟发生了有什么区别？比如人会吃饭，版本会发布，国家会复兴。<br>
+某种意义上来说，将要发生的事情，其实已经过去了。所有不确定的，可能被改变的事情，才真正属于未来，更值得去思考和善待。<br>
+有意思的是，确定和不确定的状态可以互换，如果你抓住这点，某种意义上相当于拥有了一台时光机。</p>
+<p>如何在正确的时机做出正确的选择？我的答案是：在你想做一件事的时候，认真的去做这件事，然后也认真的做后面的每一件事。</p>
+<p>开局不管选了什么英雄，猥琐发育总没有错。<br>
+就这么简单。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>stream-of-consciousness</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>在react-native中利用appium进行自动化集成测试</title>
+    <url>/2017/04/28/rn-test-e2e-test-with-appium/</url>
+    <content><![CDATA[<p>本篇文章简单介绍如何在react-native中使用appium进行e2e自动化测试。</p>
+<span id="more"></span>
+<h3 id="Appium与WebDriver"><a class="header-anchor" href="#Appium与WebDriver">#</a>Appium与WebDriver</h3>
+<p><a href="http://appium.io/">Appium</a>是一个用来对移动设备App进行集成测试的工具。<br>
+<a href="https://www.w3.org/TR/webdriver/">WebDriver</a>是用任意语言模拟浏览器行为的标准，主要用在<a href="http://www.seleniumhq.org/">Selenium</a>系列的工具，用来对web项目进行集成测试。</p>
+<h3 id="ReactNative中的实现"><a class="header-anchor" href="#ReactNative中的实现">#</a>ReactNative中的实现</h3>
+<p>Appium可以用 <strong>uiautomator</strong> 进行页面元素的查找和操作，用react-native写的Android页面，为了方便查找可以设置<code>accessibilityLabel</code>.<br>
+如下的一个Component实现：</p>
+<figure class="highlight jsx"><table><tr><td class="code"><pre><span class="line">&lt;TouchableNativeFeedback</span><br><span class="line">    background=&#123;TouchableNativeFeedback.Ripple(<span class="string">&quot;red&quot;</span>, <span class="literal">true</span>)&#125;</span><br><span class="line">    accessibilityLabel=<span class="string">&quot;clickZone&quot;</span></span><br><span class="line">    onPress=&#123;counter&#125;</span><br><span class="line">&gt;</span><br><span class="line">    <span class="xml"><span class="tag">&lt;<span class="name">View</span> <span class="attr">style</span>=<span class="string">&#123;DynamicStyle.AccessibilityLabel.clickZone&#125;</span>&gt;</span></span></span><br><span class="line"><span class="xml">        <span class="tag">&lt;<span class="name">Text</span>&gt;</span>Some Text<span class="tag">&lt;/<span class="name">Text</span>&gt;</span></span></span><br><span class="line"><span class="xml">    <span class="tag">&lt;/<span class="name">View</span>&gt;</span></span></span><br><span class="line">&lt;/TouchableNativeFeedback&gt;</span><br></pre></td></tr></table></figure>
+<p>其中给一个可点击的<code>TouchableNativeFeedback</code>设置了<code>accessibilityLabel=&quot;clickZone&quot;</code>.</p>
+<ul>
+<li>Appium脚本的实现<br>
+在Appium脚本中可以进行View的查找和点击：</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">desired_caps = &#123;</span><br><span class="line">    <span class="string">&#x27;platformName&#x27;</span>: <span class="string">&#x27;Android&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;deviceName&#x27;</span>: <span class="string">&#x27;Meizu MX5&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;appPackage&#x27;</span>: <span class="string">&#x27;com.androidcode&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;appActivity&#x27;</span>: <span class="string">&#x27;.MainActivity&#x27;</span>,</span><br><span class="line">&#125;</span><br><span class="line">driver = webdriver.Remote(<span class="string">&#x27;http://localhost:4723/wd/hub&#x27;</span>, desired_caps)</span><br><span class="line"></span><br><span class="line">sleep(<span class="number">5</span>)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    <span class="comment">## 用accessibilityLabel定位元素</span></span><br><span class="line">    el = driver.find_element_by_accessibility_id(<span class="string">&#x27;clickZone&#x27;</span>)</span><br><span class="line">    <span class="keyword">assert</span> el</span><br><span class="line">    <span class="comment">## 模拟点击3下</span></span><br><span class="line">    <span class="built_in">map</span>(<span class="keyword">lambda</span> x: el.click(), <span class="built_in">range</span>(<span class="number">0</span>, <span class="number">3</span>))</span><br><span class="line"></span><br><span class="line">    <span class="comment">## 用Text属性定位元素</span></span><br><span class="line">    els = driver.find_elements_by_android_uiautomator(<span class="string">&#x27;new UiSelector().textContains(&quot;Some&quot;)&#x27;</span>)</span><br><span class="line">    <span class="keyword">assert</span> els</span><br><span class="line">    logging.warning(els[<span class="number">0</span>].text)</span><br><span class="line"><span class="keyword">except</span> Exception, e:</span><br><span class="line">    logging.error(e, exc_info=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">driver.quit()</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>术业</category>
+      </categories>
+      <tags>
+        <tag>python</tag>
+        <tag>react-native</tag>
+        <tag>automated-test</tag>
+        <tag>appium</tag>
+        <tag>android</tag>
+      </tags>
+  </entry>
+</search>
