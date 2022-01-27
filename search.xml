@@ -167,69 +167,6 @@
       </tags>
   </entry>
   <entry>
-    <title>创建与jenkins通信的微信机器人</title>
-    <url>/2017/05/11/building-a-wechat-bot-with-jenkins-api/</url>
-    <content><![CDATA[<p>基于当前自身对jenkins的使用经历, 加上最近发现了很多开源的微信api实现, 构思一个利用微信来执行任务并且查询任务状态的机器人.</p>
-<span id="more"></span>
-<h3 id="微信api"><a class="header-anchor" href="#微信api">#</a>微信api</h3>
-<p>基于网页版微信的通信机制, 很多人实现了各种语言的微信机器人api.<br>
-比如Python实现的<a href="https://github.com/littlecodersh/ItChat">ItChat</a>和<a href="https://github.com/youfou/wxpy">wxpy</a>, 或者NodeJs实现的<a href="https://github.com/Chatie/wechaty">wechaty</a>.</p>
-<h3 id="jenkinsapi"><a class="header-anchor" href="#jenkinsapi">#</a>jenkinsapi</h3>
-<p>jenkins支持RESTful风格的接口调用, <a href="https://github.com/pycontribs/jenkinsapi">jenkinsapi</a>提供了一套封装。</p>
-<h3 id="实现-v2"><a class="header-anchor" href="#实现-v2">#</a>实现</h3>
-<p>先占坑，抽空再回来补上实现的部分。</p>
-]]></content>
-      <categories>
-        <category>术业</category>
-      </categories>
-      <tags>
-        <tag>jenkins</tag>
-        <tag>wechat</tag>
-        <tag>chatbot</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>[代码即利剑2]用graphviz画流程图</title>
-    <url>/2018/01/17/code-as-sword-2-graphviz/</url>
-    <content><![CDATA[<p>本文介绍如何用graphviz画流程图。</p>
-<span id="more"></span>
-<h3 id="工具安装"><a class="header-anchor" href="#工具安装">#</a>工具安装</h3>
-<p>从<a href="http://www.graphviz.org/download/">graphviz</a>下载安装</p>
-<h3 id="简单例子"><a class="header-anchor" href="#简单例子">#</a>简单例子</h3>
-<p>可通过运行一个简单例子，验证是否安装成功。<br>
-新建<code>test.dot</code>文件，内容如下：</p>
-<figure class="highlight abnf"><table><tr><td class="code"><pre><span class="line">digraph abc&#123;</span><br><span class="line">  a<span class="comment">;</span></span><br><span class="line">  b<span class="comment">;</span></span><br><span class="line">  c<span class="comment">;</span></span><br><span class="line">  d<span class="comment">;</span></span><br><span class="line"></span><br><span class="line">  a -&gt; b<span class="comment">;</span></span><br><span class="line">  b -&gt; d<span class="comment">;</span></span><br><span class="line">  c -&gt; d<span class="comment">;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>生成svg：</p>
-<figure class="highlight cmake"><table><tr><td class="code"><pre><span class="line">dot -Tsvg <span class="keyword">test</span>.dot -o <span class="keyword">test</span>.svg</span><br></pre></td></tr></table></figure>
-<p>生成的test.svg如下：<br>
-<img src="/asserts/images/test_graphviz.svg" alt="test_graphviz"></p>
-<h3 id="简单教程"><a class="header-anchor" href="#简单教程">#</a>简单教程</h3>
-<p>详细教程参考官方文档<a href="https://graphviz.gitlab.io/_pages/pdf/dotguide.pdf">dotguide</a></p>
-<h4 id="创建图"><a class="header-anchor" href="#创建图">#</a>创建图</h4>
-<figure class="highlight dts"><table><tr><td class="code"><pre><span class="line">digraph <span class="class">abc </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="添加节点"><a class="header-anchor" href="#添加节点">#</a>添加节点</h4>
-<p>可通过<code>[]</code>设置属性，常用<code>label</code>增加注解，<code>shape</code>指定形状，<code>color</code>指定颜色</p>
-<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">a [<span class="attribute">label</span>=<span class="string">&quot;节点a&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;triangle&quot;</span>];</span><br><span class="line">b [<span class="attribute">label</span>=<span class="string">&quot;节点b&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;circle&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">c [<span class="attribute">label</span>=<span class="string">&quot;节点c&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;point&quot;</span>];</span><br><span class="line">d [<span class="attribute">label</span>=<span class="string">&quot;节点d&quot;</span>];</span><br></pre></td></tr></table></figure>
-<h4 id="添加边"><a class="header-anchor" href="#添加边">#</a>添加边</h4>
-<p>可通过<code>[]</code>设置属性，常用<code>label</code>增加注解，<code>style</code>指定形状，<code>color</code>指定颜色</p>
-<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">a -&gt; b [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dashed&quot;</span>];</span><br><span class="line">b -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边bd&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dotted&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">c -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>];</span><br></pre></td></tr></table></figure>
-<h4 id="子图"><a class="header-anchor" href="#子图">#</a>子图</h4>
-<p>可通过<code>subgraph</code>创建子图，通过边在子图之间建立关联</p>
-<figure class="highlight perl"><table><tr><td class="code"><pre><span class="line">subgraph <span class="function"><span class="keyword">sub</span> </span>&#123;</span><br><span class="line">    <span class="keyword">x</span>;</span><br><span class="line">    <span class="keyword">y</span>;</span><br><span class="line">    z;</span><br><span class="line">    d -&gt; <span class="keyword">x</span> -&gt; <span class="keyword">y</span> -&gt; z;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="完整示例"><a class="header-anchor" href="#完整示例">#</a>完整示例</h4>
-<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">digraph abc &#123;</span><br><span class="line">  a [<span class="attribute">label</span>=<span class="string">&quot;节点a&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;triangle&quot;</span>];</span><br><span class="line">  b [<span class="attribute">label</span>=<span class="string">&quot;节点b&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;circle&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">  c [<span class="attribute">label</span>=<span class="string">&quot;节点c&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;point&quot;</span>];</span><br><span class="line">  d [<span class="attribute">label</span>=<span class="string">&quot;节点d&quot;</span>];</span><br><span class="line"></span><br><span class="line">  a -&gt; b [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dashed&quot;</span>];</span><br><span class="line">  b -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边bd&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dotted&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">  c -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>];</span><br><span class="line"></span><br><span class="line">  subgraph sub &#123;</span><br><span class="line">    x;</span><br><span class="line">    y;</span><br><span class="line">    z;</span><br><span class="line">    d -&gt; x -&gt; y -&gt; z;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>生成结果如下<br>
-<img src="/asserts/images/demo_graphviz.svg" alt="demo_graphviz"></p>
-]]></content>
-      <categories>
-        <category>工具</category>
-      </categories>
-      <tags>
-        <tag>graphviz</tag>
-        <tag>flow-chart</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>[代码即利剑1]用Markdown写文档</title>
     <url>/2018/01/16/code-as-sword-1-markdown/</url>
     <content><![CDATA[<p>本文可被看做用Markdown写文档的基础教程。</p>
@@ -325,6 +262,89 @@ print ‘hello world’<br>
       </tags>
   </entry>
   <entry>
+    <title>创建与jenkins通信的微信机器人</title>
+    <url>/2017/05/11/building-a-wechat-bot-with-jenkins-api/</url>
+    <content><![CDATA[<p>基于当前自身对jenkins的使用经历, 加上最近发现了很多开源的微信api实现, 构思一个利用微信来执行任务并且查询任务状态的机器人.</p>
+<span id="more"></span>
+<h3 id="微信api"><a class="header-anchor" href="#微信api">#</a>微信api</h3>
+<p>基于网页版微信的通信机制, 很多人实现了各种语言的微信机器人api.<br>
+比如Python实现的<a href="https://github.com/littlecodersh/ItChat">ItChat</a>和<a href="https://github.com/youfou/wxpy">wxpy</a>, 或者NodeJs实现的<a href="https://github.com/Chatie/wechaty">wechaty</a>.</p>
+<h3 id="jenkinsapi"><a class="header-anchor" href="#jenkinsapi">#</a>jenkinsapi</h3>
+<p>jenkins支持RESTful风格的接口调用, <a href="https://github.com/pycontribs/jenkinsapi">jenkinsapi</a>提供了一套封装。</p>
+<h3 id="实现-v2"><a class="header-anchor" href="#实现-v2">#</a>实现</h3>
+<p>先占坑，抽空再回来补上实现的部分。</p>
+]]></content>
+      <categories>
+        <category>术业</category>
+      </categories>
+      <tags>
+        <tag>jenkins</tag>
+        <tag>wechat</tag>
+        <tag>chatbot</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>[代码即利剑2]用graphviz画流程图</title>
+    <url>/2018/01/17/code-as-sword-2-graphviz/</url>
+    <content><![CDATA[<p>本文介绍如何用graphviz画流程图。</p>
+<span id="more"></span>
+<h3 id="工具安装"><a class="header-anchor" href="#工具安装">#</a>工具安装</h3>
+<p>从<a href="http://www.graphviz.org/download/">graphviz</a>下载安装</p>
+<h3 id="简单例子"><a class="header-anchor" href="#简单例子">#</a>简单例子</h3>
+<p>可通过运行一个简单例子，验证是否安装成功。<br>
+新建<code>test.dot</code>文件，内容如下：</p>
+<figure class="highlight abnf"><table><tr><td class="code"><pre><span class="line">digraph abc&#123;</span><br><span class="line">  a<span class="comment">;</span></span><br><span class="line">  b<span class="comment">;</span></span><br><span class="line">  c<span class="comment">;</span></span><br><span class="line">  d<span class="comment">;</span></span><br><span class="line"></span><br><span class="line">  a -&gt; b<span class="comment">;</span></span><br><span class="line">  b -&gt; d<span class="comment">;</span></span><br><span class="line">  c -&gt; d<span class="comment">;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>生成svg：</p>
+<figure class="highlight cmake"><table><tr><td class="code"><pre><span class="line">dot -Tsvg <span class="keyword">test</span>.dot -o <span class="keyword">test</span>.svg</span><br></pre></td></tr></table></figure>
+<p>生成的test.svg如下：<br>
+<img src="/asserts/images/test_graphviz.svg" alt="test_graphviz"></p>
+<h3 id="简单教程"><a class="header-anchor" href="#简单教程">#</a>简单教程</h3>
+<p>详细教程参考官方文档<a href="https://graphviz.gitlab.io/_pages/pdf/dotguide.pdf">dotguide</a></p>
+<h4 id="创建图"><a class="header-anchor" href="#创建图">#</a>创建图</h4>
+<figure class="highlight dts"><table><tr><td class="code"><pre><span class="line">digraph <span class="class">abc </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="添加节点"><a class="header-anchor" href="#添加节点">#</a>添加节点</h4>
+<p>可通过<code>[]</code>设置属性，常用<code>label</code>增加注解，<code>shape</code>指定形状，<code>color</code>指定颜色</p>
+<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">a [<span class="attribute">label</span>=<span class="string">&quot;节点a&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;triangle&quot;</span>];</span><br><span class="line">b [<span class="attribute">label</span>=<span class="string">&quot;节点b&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;circle&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">c [<span class="attribute">label</span>=<span class="string">&quot;节点c&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;point&quot;</span>];</span><br><span class="line">d [<span class="attribute">label</span>=<span class="string">&quot;节点d&quot;</span>];</span><br></pre></td></tr></table></figure>
+<h4 id="添加边"><a class="header-anchor" href="#添加边">#</a>添加边</h4>
+<p>可通过<code>[]</code>设置属性，常用<code>label</code>增加注解，<code>style</code>指定形状，<code>color</code>指定颜色</p>
+<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">a -&gt; b [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dashed&quot;</span>];</span><br><span class="line">b -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边bd&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dotted&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">c -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>];</span><br></pre></td></tr></table></figure>
+<h4 id="子图"><a class="header-anchor" href="#子图">#</a>子图</h4>
+<p>可通过<code>subgraph</code>创建子图，通过边在子图之间建立关联</p>
+<figure class="highlight perl"><table><tr><td class="code"><pre><span class="line">subgraph <span class="function"><span class="keyword">sub</span> </span>&#123;</span><br><span class="line">    <span class="keyword">x</span>;</span><br><span class="line">    <span class="keyword">y</span>;</span><br><span class="line">    z;</span><br><span class="line">    d -&gt; <span class="keyword">x</span> -&gt; <span class="keyword">y</span> -&gt; z;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="完整示例"><a class="header-anchor" href="#完整示例">#</a>完整示例</h4>
+<figure class="highlight routeros"><table><tr><td class="code"><pre><span class="line">digraph abc &#123;</span><br><span class="line">  a [<span class="attribute">label</span>=<span class="string">&quot;节点a&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;triangle&quot;</span>];</span><br><span class="line">  b [<span class="attribute">label</span>=<span class="string">&quot;节点b&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;circle&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">  c [<span class="attribute">label</span>=<span class="string">&quot;节点c&quot;</span>, <span class="attribute">shape</span>=<span class="string">&quot;point&quot;</span>];</span><br><span class="line">  d [<span class="attribute">label</span>=<span class="string">&quot;节点d&quot;</span>];</span><br><span class="line"></span><br><span class="line">  a -&gt; b [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dashed&quot;</span>];</span><br><span class="line">  b -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边bd&quot;</span>, <span class="attribute">style</span>=<span class="string">&quot;dotted&quot;</span>, <span class="attribute">color</span>=<span class="string">&quot;green&quot;</span>];</span><br><span class="line">  c -&gt; d [<span class="attribute">label</span>=<span class="string">&quot;边ab&quot;</span>];</span><br><span class="line"></span><br><span class="line">  subgraph sub &#123;</span><br><span class="line">    x;</span><br><span class="line">    y;</span><br><span class="line">    z;</span><br><span class="line">    d -&gt; x -&gt; y -&gt; z;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>生成结果如下<br>
+<img src="/asserts/images/demo_graphviz.svg" alt="demo_graphviz"></p>
+]]></content>
+      <categories>
+        <category>工具</category>
+      </categories>
+      <tags>
+        <tag>graphviz</tag>
+        <tag>flow-chart</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>[代码即利剑3]用reveal做ppt</title>
+    <url>/2018/01/18/code-as-sword-3-reveal/</url>
+    <content><![CDATA[<p>本文推荐使用reveal.js做ppt。</p>
+<span id="more"></span>
+<p><a href="https://github.com/hakimel/reveal.js">reveal.js</a>是一款专门用来做ppt的前端框架，支持markdown语法，可以方便地排版以及处理样式和动画，作为一个web服务，在浏览器中打开，同时也支持转成pdf。</p>
+<h3 id="安装"><a class="header-anchor" href="#安装">#</a>安装</h3>
+<p>参考<a href="https://github.com/hakimel/reveal.js#installation">官方文档</a>安装，如果不需要提供外部访问的服务，可以按照 <strong>Basic setup</strong> 指示，下载工程压缩包，解压后直接在浏览器中打开index.html文件即可。</p>
+<h3 id="使用-v2"><a class="header-anchor" href="#使用-v2">#</a>使用</h3>
+<p>修改<code>index.html</code>文件，在<code>&lt;div class=&quot;slides&quot;&gt;&lt;/div&gt;</code>标签里添加<code>&lt;section&gt;&lt;/section&gt;</code>即可增加一页ppt。<br>
+官方提供的<code>demo.html</code>本身是一个很好的文档，可以修改然后打开试试看，点击看<a href="https://revealjs.com">原效果</a></p>
+]]></content>
+      <categories>
+        <category>工具</category>
+      </categories>
+      <tags>
+        <tag>ppt</tag>
+        <tag>reveal</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>[代码即利剑4]用alda作曲</title>
     <url>/2018/01/19/code-as-sword-4-alda/</url>
     <content><![CDATA[<p>本文介绍如何使用alda编写曲谱。</p>
@@ -332,7 +352,7 @@ print ‘hello world’<br>
 <p>alda的官方描述：A music programming language for musicians.<br>
 很酷吧。<br>
 可以在官方的<a href="http://alda-lang.github.io/web-demo/">web-demo</a>先体验一下</p>
-<h3 id="安装"><a class="header-anchor" href="#安装">#</a>安装</h3>
+<h3 id="安装-v2"><a class="header-anchor" href="#安装-v2">#</a>安装</h3>
 <p>参考<a href="https://github.com/alda-lang/alda#installation">官方介绍</a>安装alda.<br>
 启动alda服务</p>
 <figure class="highlight ebnf"><table><tr><td class="code"><pre><span class="line"><span class="attribute">alda up</span></span><br></pre></td></tr></table></figure>
@@ -382,23 +402,18 @@ print ‘hello world’<br>
       </tags>
   </entry>
   <entry>
-    <title>[代码即利剑3]用reveal做ppt</title>
-    <url>/2018/01/18/code-as-sword-3-reveal/</url>
-    <content><![CDATA[<p>本文推荐使用reveal.js做ppt。</p>
+    <title>矛盾</title>
+    <url>/2017/08/20/contradiction/</url>
+    <content><![CDATA[<p>纯粹乃诗人美好的愿望.</p>
 <span id="more"></span>
-<p><a href="https://github.com/hakimel/reveal.js">reveal.js</a>是一款专门用来做ppt的前端框架，支持markdown语法，可以方便地排版以及处理样式和动画，作为一个web服务，在浏览器中打开，同时也支持转成pdf。</p>
-<h3 id="安装-v2"><a class="header-anchor" href="#安装-v2">#</a>安装</h3>
-<p>参考<a href="https://github.com/hakimel/reveal.js#installation">官方文档</a>安装，如果不需要提供外部访问的服务，可以按照 <strong>Basic setup</strong> 指示，下载工程压缩包，解压后直接在浏览器中打开index.html文件即可。</p>
-<h3 id="使用-v2"><a class="header-anchor" href="#使用-v2">#</a>使用</h3>
-<p>修改<code>index.html</code>文件，在<code>&lt;div class=&quot;slides&quot;&gt;&lt;/div&gt;</code>标签里添加<code>&lt;section&gt;&lt;/section&gt;</code>即可增加一页ppt。<br>
-官方提供的<code>demo.html</code>本身是一个很好的文档，可以修改然后打开试试看，点击看<a href="https://revealjs.com">原效果</a></p>
+<p>以为世间万物皆有矛盾的情感, 因其复杂而成其特点.<br>
+众人皆知道圣人君子该如何,却不知往圣人君子的道路上这些人经历过哪些矛盾,而后人似也较少记录这些细节.</p>
 ]]></content>
       <categories>
-        <category>工具</category>
+        <category>他的国</category>
       </categories>
       <tags>
-        <tag>ppt</tag>
-        <tag>reveal</tag>
+        <tag>stream-of-consciousness</tag>
       </tags>
   </entry>
   <entry>
@@ -430,21 +445,6 @@ print ‘hello world’<br>
       </tags>
   </entry>
   <entry>
-    <title>矛盾</title>
-    <url>/2017/08/20/contradiction/</url>
-    <content><![CDATA[<p>纯粹乃诗人美好的愿望.</p>
-<span id="more"></span>
-<p>以为世间万物皆有矛盾的情感, 因其复杂而成其特点.<br>
-众人皆知道圣人君子该如何,却不知往圣人君子的道路上这些人经历过哪些矛盾,而后人似也较少记录这些细节.</p>
-]]></content>
-      <categories>
-        <category>他的国</category>
-      </categories>
-      <tags>
-        <tag>stream-of-consciousness</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>敦煌游记</title>
     <url>/2018/08/30/dunhuang-journey/</url>
     <content><![CDATA[<p>神圣的敦煌，平凡的世界。</p>
@@ -464,6 +464,26 @@ print ‘hello world’<br>
       </categories>
       <tags>
         <tag>travel</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>内自省与对世界的宽容</title>
+    <url>/2017/06/18/introspection-and-tolerant/</url>
+    <content><![CDATA[<p>内自省。</p>
+<span id="more"></span>
+<p>每做完一件事去思考这样做好不好，如何能做的更好。对别人是不是有帮助，是不是会伤害到别人。</p>
+<p>见贤思齐焉，见不贤而内自省也。<br>
+内心剧烈挣扎过，才能理解别人的处境，也更能发现别人之所以那样做的原因。<br>
+常常洞察自己的内心，会发现自己原来有各种各样的情欲，自己会愚蠢，会贪婪。</p>
+<p>内自省而宽容的一个境界是<br>
+塞翁失马，焉知非福。<br>
+小时候以为塞翁是早知道结局会好，后来才明白，原来是不知道结局。因为结局未知，所以还可以抱有希望，尝试争取。也是因为尘埃未定，所以可以宽容。</p>
+]]></content>
+      <categories>
+        <category>他的国</category>
+      </categories>
+      <tags>
+        <tag>think</tag>
       </tags>
   </entry>
   <entry>
@@ -491,51 +511,6 @@ print ‘hello world’<br>
       </categories>
       <tags>
         <tag>stream-of-consciousness</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>兰州 兰州</title>
-    <url>/2018/08/28/lanzhou-lanzhou/</url>
-    <content><![CDATA[<p>在兰州逗留4天，计划外的计划。</p>
-<span id="more"></span>
-<p>这两天才知道，甘肃是华夏文明的重要发祥地。<br>
-把兰州当做去敦煌中转站的初衷，意外捡到惊喜。</p>
-<p>相比西安，兰州没有帝王经过留下的金碧辉煌，她凝视的，是更多小人物的朴实宁静。</p>
-<p>四年前在泸定种下的旅行理想，在兰州收获。到一个城市，像当地人一样生活，离开的时候，竟然萌生出一丝乡愁。</p>
-<p>去大自然烤肉点一斤羊肉，和同桌的情侣搭话。即便没有安利费，也强烈推荐我点烤土豆片，羊骨头汤。一边解释为什么羊骨头汤好喝，一边聊兰州的交通怎么样。男生催女生赶电影的场，“快走吧，八点四十开始”，临走前两人还不忘跟我告别，“你慢慢吃啊”。</p>
-<p>酒泉路夜市，排着队观看摄影师给白胡子老爷爷拍照。舀牛奶，舀醪糟，打鸡蛋，乘进纸杯，动作缓慢，面带微笑。直到摄影师不断竖起大拇指夸赞，“真棒”。舌尖上的中国真人秀，现场10块，还送一杯鸡蛋牛奶醪糟，超值。</p>
-<p>中元节的傍晚，在街边有个一个小型祭祀台，几个大叔阿姨忙着点蜡烛烧纸钱。先来的阿姨看到后来的大叔挤占位子，大声质问，“我们先来的呀”。</p>
-<p>在兰州大学榆中校区，看到花海心里怒放的我给一起拼车的同学发消息，说这应该是国内大学里自然环境最好的，同学回复，“据说武汉大学的环境是最好的”，紧接着补充，“没去过，我也搞不清楚哪里是最好的”。于是我们约定，将来我去武大看看，再告诉他有没有比这里好。</p>
-<p>何以惹乡愁？<br>
-大概是厚实的银杏叶，大概是又呛又辣的牛肉面，大概是上火拉肚子，大概是在白塔山流着鼻血打战队赛，大概是在兰大花海里打瞌睡，大概是许多熟悉喜爱的交谈，大概是一种毫不掩饰的市井气。</p>
-<p>还有吗？<br>
-有黄河水，无语东流。</p>
-]]></content>
-      <categories>
-        <category>世界</category>
-      </categories>
-      <tags>
-        <tag>travel</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>内自省与对世界的宽容</title>
-    <url>/2017/06/18/introspection-and-tolerant/</url>
-    <content><![CDATA[<p>内自省。</p>
-<span id="more"></span>
-<p>每做完一件事去思考这样做好不好，如何能做的更好。对别人是不是有帮助，是不是会伤害到别人。</p>
-<p>见贤思齐焉，见不贤而内自省也。<br>
-内心剧烈挣扎过，才能理解别人的处境，也更能发现别人之所以那样做的原因。<br>
-常常洞察自己的内心，会发现自己原来有各种各样的情欲，自己会愚蠢，会贪婪。</p>
-<p>内自省而宽容的一个境界是<br>
-塞翁失马，焉知非福。<br>
-小时候以为塞翁是早知道结局会好，后来才明白，原来是不知道结局。因为结局未知，所以还可以抱有希望，尝试争取。也是因为尘埃未定，所以可以宽容。</p>
-]]></content>
-      <categories>
-        <category>他的国</category>
-      </categories>
-      <tags>
-        <tag>think</tag>
       </tags>
   </entry>
   <entry>
@@ -576,6 +551,31 @@ print ‘hello world’<br>
       </categories>
       <tags>
         <tag>memory</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>兰州 兰州</title>
+    <url>/2018/08/28/lanzhou-lanzhou/</url>
+    <content><![CDATA[<p>在兰州逗留4天，计划外的计划。</p>
+<span id="more"></span>
+<p>这两天才知道，甘肃是华夏文明的重要发祥地。<br>
+把兰州当做去敦煌中转站的初衷，意外捡到惊喜。</p>
+<p>相比西安，兰州没有帝王经过留下的金碧辉煌，她凝视的，是更多小人物的朴实宁静。</p>
+<p>四年前在泸定种下的旅行理想，在兰州收获。到一个城市，像当地人一样生活，离开的时候，竟然萌生出一丝乡愁。</p>
+<p>去大自然烤肉点一斤羊肉，和同桌的情侣搭话。即便没有安利费，也强烈推荐我点烤土豆片，羊骨头汤。一边解释为什么羊骨头汤好喝，一边聊兰州的交通怎么样。男生催女生赶电影的场，“快走吧，八点四十开始”，临走前两人还不忘跟我告别，“你慢慢吃啊”。</p>
+<p>酒泉路夜市，排着队观看摄影师给白胡子老爷爷拍照。舀牛奶，舀醪糟，打鸡蛋，乘进纸杯，动作缓慢，面带微笑。直到摄影师不断竖起大拇指夸赞，“真棒”。舌尖上的中国真人秀，现场10块，还送一杯鸡蛋牛奶醪糟，超值。</p>
+<p>中元节的傍晚，在街边有个一个小型祭祀台，几个大叔阿姨忙着点蜡烛烧纸钱。先来的阿姨看到后来的大叔挤占位子，大声质问，“我们先来的呀”。</p>
+<p>在兰州大学榆中校区，看到花海心里怒放的我给一起拼车的同学发消息，说这应该是国内大学里自然环境最好的，同学回复，“据说武汉大学的环境是最好的”，紧接着补充，“没去过，我也搞不清楚哪里是最好的”。于是我们约定，将来我去武大看看，再告诉他有没有比这里好。</p>
+<p>何以惹乡愁？<br>
+大概是厚实的银杏叶，大概是又呛又辣的牛肉面，大概是上火拉肚子，大概是在白塔山流着鼻血打战队赛，大概是在兰大花海里打瞌睡，大概是许多熟悉喜爱的交谈，大概是一种毫不掩饰的市井气。</p>
+<p>还有吗？<br>
+有黄河水，无语东流。</p>
+]]></content>
+      <categories>
+        <category>世界</category>
+      </categories>
+      <tags>
+        <tag>travel</tag>
       </tags>
   </entry>
   <entry>
@@ -719,6 +719,36 @@ print ‘hello world’<br>
       </tags>
   </entry>
   <entry>
+    <title>在react-native中利用appium进行自动化集成测试</title>
+    <url>/2017/04/28/rn-test-e2e-test-with-appium/</url>
+    <content><![CDATA[<p>本篇文章简单介绍如何在react-native中使用appium进行e2e自动化测试。</p>
+<span id="more"></span>
+<h3 id="Appium与WebDriver"><a class="header-anchor" href="#Appium与WebDriver">#</a>Appium与WebDriver</h3>
+<p><a href="http://appium.io/">Appium</a>是一个用来对移动设备App进行集成测试的工具。<br>
+<a href="https://www.w3.org/TR/webdriver/">WebDriver</a>是用任意语言模拟浏览器行为的标准，主要用在<a href="http://www.seleniumhq.org/">Selenium</a>系列的工具，用来对web项目进行集成测试。</p>
+<h3 id="ReactNative中的实现"><a class="header-anchor" href="#ReactNative中的实现">#</a>ReactNative中的实现</h3>
+<p>Appium可以用 <strong>uiautomator</strong> 进行页面元素的查找和操作，用react-native写的Android页面，为了方便查找可以设置<code>accessibilityLabel</code>.<br>
+如下的一个Component实现：</p>
+<figure class="highlight jsx"><table><tr><td class="code"><pre><span class="line">&lt;TouchableNativeFeedback</span><br><span class="line">    background=&#123;TouchableNativeFeedback.Ripple(<span class="string">&quot;red&quot;</span>, <span class="literal">true</span>)&#125;</span><br><span class="line">    accessibilityLabel=<span class="string">&quot;clickZone&quot;</span></span><br><span class="line">    onPress=&#123;counter&#125;</span><br><span class="line">&gt;</span><br><span class="line">    <span class="xml"><span class="tag">&lt;<span class="name">View</span> <span class="attr">style</span>=<span class="string">&#123;DynamicStyle.AccessibilityLabel.clickZone&#125;</span>&gt;</span></span></span><br><span class="line"><span class="xml">        <span class="tag">&lt;<span class="name">Text</span>&gt;</span>Some Text<span class="tag">&lt;/<span class="name">Text</span>&gt;</span></span></span><br><span class="line"><span class="xml">    <span class="tag">&lt;/<span class="name">View</span>&gt;</span></span></span><br><span class="line">&lt;/TouchableNativeFeedback&gt;</span><br></pre></td></tr></table></figure>
+<p>其中给一个可点击的<code>TouchableNativeFeedback</code>设置了<code>accessibilityLabel=&quot;clickZone&quot;</code>.</p>
+<ul>
+<li>Appium脚本的实现<br>
+在Appium脚本中可以进行View的查找和点击：</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">desired_caps = &#123;</span><br><span class="line">    <span class="string">&#x27;platformName&#x27;</span>: <span class="string">&#x27;Android&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;deviceName&#x27;</span>: <span class="string">&#x27;Meizu MX5&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;appPackage&#x27;</span>: <span class="string">&#x27;com.androidcode&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;appActivity&#x27;</span>: <span class="string">&#x27;.MainActivity&#x27;</span>,</span><br><span class="line">&#125;</span><br><span class="line">driver = webdriver.Remote(<span class="string">&#x27;http://localhost:4723/wd/hub&#x27;</span>, desired_caps)</span><br><span class="line"></span><br><span class="line">sleep(<span class="number">5</span>)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    <span class="comment">## 用accessibilityLabel定位元素</span></span><br><span class="line">    el = driver.find_element_by_accessibility_id(<span class="string">&#x27;clickZone&#x27;</span>)</span><br><span class="line">    <span class="keyword">assert</span> el</span><br><span class="line">    <span class="comment">## 模拟点击3下</span></span><br><span class="line">    <span class="built_in">map</span>(<span class="keyword">lambda</span> x: el.click(), <span class="built_in">range</span>(<span class="number">0</span>, <span class="number">3</span>))</span><br><span class="line"></span><br><span class="line">    <span class="comment">## 用Text属性定位元素</span></span><br><span class="line">    els = driver.find_elements_by_android_uiautomator(<span class="string">&#x27;new UiSelector().textContains(&quot;Some&quot;)&#x27;</span>)</span><br><span class="line">    <span class="keyword">assert</span> els</span><br><span class="line">    logging.warning(els[<span class="number">0</span>].text)</span><br><span class="line"><span class="keyword">except</span> Exception, e:</span><br><span class="line">    logging.error(e, exc_info=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">driver.quit()</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>术业</category>
+      </categories>
+      <tags>
+        <tag>python</tag>
+        <tag>react-native</tag>
+        <tag>automated-test</tag>
+        <tag>appium</tag>
+        <tag>android</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>扫地</title>
     <url>/2019/02/10/sweep-the-floor/</url>
     <content><![CDATA[<p>扫地当然只是个减熵的问题。</p>
@@ -807,9 +837,9 @@ print ‘hello world’<br>
         <category>术业</category>
       </categories>
       <tags>
+        <tag>react-native</tag>
         <tag>es7</tag>
         <tag>decorator</tag>
-        <tag>react-native</tag>
       </tags>
   </entry>
   <entry>
@@ -955,36 +985,6 @@ print ‘hello world’<br>
       </categories>
       <tags>
         <tag>stream-of-consciousness</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>在react-native中利用appium进行自动化集成测试</title>
-    <url>/2017/04/28/rn-test-e2e-test-with-appium/</url>
-    <content><![CDATA[<p>本篇文章简单介绍如何在react-native中使用appium进行e2e自动化测试。</p>
-<span id="more"></span>
-<h3 id="Appium与WebDriver"><a class="header-anchor" href="#Appium与WebDriver">#</a>Appium与WebDriver</h3>
-<p><a href="http://appium.io/">Appium</a>是一个用来对移动设备App进行集成测试的工具。<br>
-<a href="https://www.w3.org/TR/webdriver/">WebDriver</a>是用任意语言模拟浏览器行为的标准，主要用在<a href="http://www.seleniumhq.org/">Selenium</a>系列的工具，用来对web项目进行集成测试。</p>
-<h3 id="ReactNative中的实现"><a class="header-anchor" href="#ReactNative中的实现">#</a>ReactNative中的实现</h3>
-<p>Appium可以用 <strong>uiautomator</strong> 进行页面元素的查找和操作，用react-native写的Android页面，为了方便查找可以设置<code>accessibilityLabel</code>.<br>
-如下的一个Component实现：</p>
-<figure class="highlight jsx"><table><tr><td class="code"><pre><span class="line">&lt;TouchableNativeFeedback</span><br><span class="line">    background=&#123;TouchableNativeFeedback.Ripple(<span class="string">&quot;red&quot;</span>, <span class="literal">true</span>)&#125;</span><br><span class="line">    accessibilityLabel=<span class="string">&quot;clickZone&quot;</span></span><br><span class="line">    onPress=&#123;counter&#125;</span><br><span class="line">&gt;</span><br><span class="line">    <span class="xml"><span class="tag">&lt;<span class="name">View</span> <span class="attr">style</span>=<span class="string">&#123;DynamicStyle.AccessibilityLabel.clickZone&#125;</span>&gt;</span></span></span><br><span class="line"><span class="xml">        <span class="tag">&lt;<span class="name">Text</span>&gt;</span>Some Text<span class="tag">&lt;/<span class="name">Text</span>&gt;</span></span></span><br><span class="line"><span class="xml">    <span class="tag">&lt;/<span class="name">View</span>&gt;</span></span></span><br><span class="line">&lt;/TouchableNativeFeedback&gt;</span><br></pre></td></tr></table></figure>
-<p>其中给一个可点击的<code>TouchableNativeFeedback</code>设置了<code>accessibilityLabel=&quot;clickZone&quot;</code>.</p>
-<ul>
-<li>Appium脚本的实现<br>
-在Appium脚本中可以进行View的查找和点击：</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">desired_caps = &#123;</span><br><span class="line">    <span class="string">&#x27;platformName&#x27;</span>: <span class="string">&#x27;Android&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;deviceName&#x27;</span>: <span class="string">&#x27;Meizu MX5&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;appPackage&#x27;</span>: <span class="string">&#x27;com.androidcode&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;appActivity&#x27;</span>: <span class="string">&#x27;.MainActivity&#x27;</span>,</span><br><span class="line">&#125;</span><br><span class="line">driver = webdriver.Remote(<span class="string">&#x27;http://localhost:4723/wd/hub&#x27;</span>, desired_caps)</span><br><span class="line"></span><br><span class="line">sleep(<span class="number">5</span>)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    <span class="comment">## 用accessibilityLabel定位元素</span></span><br><span class="line">    el = driver.find_element_by_accessibility_id(<span class="string">&#x27;clickZone&#x27;</span>)</span><br><span class="line">    <span class="keyword">assert</span> el</span><br><span class="line">    <span class="comment">## 模拟点击3下</span></span><br><span class="line">    <span class="built_in">map</span>(<span class="keyword">lambda</span> x: el.click(), <span class="built_in">range</span>(<span class="number">0</span>, <span class="number">3</span>))</span><br><span class="line"></span><br><span class="line">    <span class="comment">## 用Text属性定位元素</span></span><br><span class="line">    els = driver.find_elements_by_android_uiautomator(<span class="string">&#x27;new UiSelector().textContains(&quot;Some&quot;)&#x27;</span>)</span><br><span class="line">    <span class="keyword">assert</span> els</span><br><span class="line">    logging.warning(els[<span class="number">0</span>].text)</span><br><span class="line"><span class="keyword">except</span> Exception, e:</span><br><span class="line">    logging.error(e, exc_info=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">driver.quit()</span><br></pre></td></tr></table></figure>
-]]></content>
-      <categories>
-        <category>术业</category>
-      </categories>
-      <tags>
-        <tag>python</tag>
-        <tag>react-native</tag>
-        <tag>automated-test</tag>
-        <tag>appium</tag>
-        <tag>android</tag>
       </tags>
   </entry>
 </search>
