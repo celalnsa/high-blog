@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="functional-programing,python," />
+  <meta name="keywords" content="python,functional-programing," />
 
 
 
@@ -103,8 +103,8 @@
 <meta property="article:published_time" content="2017-04-27T12:00:06.000Z">
 <meta property="article:modified_time" content="2018-07-28T15:09:38.584Z">
 <meta property="article:author" content="High">
-<meta property="article:tag" content="functional-programing">
 <meta property="article:tag" content="python">
+<meta property="article:tag" content="functional-programing">
 <meta name="twitter:card" content="summary">
 
 
@@ -432,13 +432,13 @@
 <h3 id="纯函数"><a class="header-anchor" href="#纯函数">#</a>纯函数</h3>
 <p>学习函数式编程可以看<a target="_blank" rel="noopener" href="https://github.com/llh911001/mostly-adequate-guide-chinese">JS函数式编程指南中文版</a><br>
 纯函数可测，可重演，最重要的是，因为同样的输入一定会产生同样的输出，使得函数的执行结果是可以被缓存的。</p>
-<h3 id="实现"><a class="header-anchor" href="#实现">#</a>实现</h3>
+<h3 id="实现-v2"><a class="header-anchor" href="#实现-v2">#</a>实现</h3>
 <p>利用Python的闭包来实现一个缓存函数执行结果的装饰器：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">cache_result</span>(<span class="params">f_key=<span class="keyword">lambda</span> x: x, expired=<span class="number">0</span></span>):</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    @param f_key: cache_key生成函数</span></span><br><span class="line"><span class="string">    @param expired: cache有效时间</span></span><br><span class="line"><span class="string">    @return: 带cache功能的原函数</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">dec</span>(<span class="params">func</span>):</span></span><br><span class="line">        cache_v = &#123;&#125;</span><br><span class="line">        cache_t = &#123;&#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">new_func</span>(<span class="params">*args, **kwargs</span>):</span></span><br><span class="line">            key = f_key(*args, **kwargs)</span><br><span class="line">            <span class="keyword">if</span> key <span class="keyword">not</span> <span class="keyword">in</span> cache_t <span class="keyword">or</span> expired <span class="keyword">and</span> time.time() - cache_t[key] &gt;= expired:</span><br><span class="line">                cache_v[key] = func(*args, **kwargs)</span><br><span class="line">                cache_t[key] = time.time()</span><br><span class="line">            <span class="keyword">return</span> cache_v[key]</span><br><span class="line">        <span class="keyword">return</span> new_func</span><br><span class="line">    <span class="keyword">return</span> dec</span><br></pre></td></tr></table></figure>
 <p><code>f_key</code>是函数入参生成的key，相当于唯一标识一组入参，默认值是id函数(像<code>x =&gt; x</code>这样的)。<br>
 <code>expired</code>是函数缓存的有效时间。<br>
 可以看到在<code>new_func</code>的逻辑当中，只有当缓存里没有这个key，或者缓存的时间已经过期时，才会重新执行原来的函数<code>func</code>并更新缓存。</p>
-<h3 id="使用"><a class="header-anchor" href="#使用">#</a>使用</h3>
+<h3 id="使用-v2"><a class="header-anchor" href="#使用-v2">#</a>使用</h3>
 <p>如下是一个需要读取redis数据的函数，注意这个函数不是一个纯函数，因为返回结果受到外部环境(redis缓存)影响。但这里数据的实时变化频次很低，近似地认为在一段时间(5秒)内，函数的执行结果是不变的。</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@cache_result(<span class="params"><span class="keyword">lambda</span> self, user_id, locale: RedisDataHelper.get_data_key(<span class="params">user_id, locale</span>), <span class="number">5</span></span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_data</span>(<span class="params">self, user_id, locale</span>):</span></span><br><span class="line">    ret = self.redis_db.get(RedisDataHelper.get_data_key(user_id, locale))</span><br><span class="line">    <span class="keyword">return</span> ret</span><br></pre></td></tr></table></figure>
 <p>加上缓存的装饰器后，5秒内如果调用的入参经过RedisDataHelper.get_data_key产生了已经缓存过的key，则在有效期5秒内会优先返回缓存的结果。</p>
@@ -492,9 +492,9 @@
       
         <div class="post-tags">
           
-            <a href="/tags/functional-programing/" rel="tag"># functional-programing</a>
-          
             <a href="/tags/python/" rel="tag"># python</a>
+          
+            <a href="/tags/functional-programing/" rel="tag"># functional-programing</a>
           
         </div>
       
@@ -591,7 +591,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">31</span>
+                <span class="site-state-item-count">33</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -659,7 +659,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%AF%E5%87%BD%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">纯函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%B6%E4%BC%B8"><span class="nav-number">4.</span> <span class="nav-text">延伸</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%AF%E5%87%BD%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">纯函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0-v2"><span class="nav-number">2.</span> <span class="nav-text">实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-v2"><span class="nav-number">3.</span> <span class="nav-text">使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%B6%E4%BC%B8"><span class="nav-number">4.</span> <span class="nav-text">延伸</span></a></li></ol></div>
             
 
           </div>
